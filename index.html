@@ -46,9 +46,14 @@
                 <span id="sync-status" class="text-[10px] font-bold text-amber-500 uppercase tracking-widest"><i class="fa-solid fa-circle-notch fa-spin"></i> Verbinde...</span>
                 <h2 id="display-household" class="text-base font-bold text-slate-900"></h2>
             </div>
-            <button onclick="handleLogout()" class="text-xs font-medium text-slate-500 hover:text-rose-600 px-3 py-1.5 rounded-lg border border-slate-200 transition-all cursor-pointer">
-                <i class="fa-solid fa-right-from-bracket mr-1"></i> Wechseln
-            </button>
+            <div class="flex items-center space-x-2">
+                <button onclick="requestNotificationPermission()" id="notif-btn" class="text-xs font-medium text-slate-500 hover:text-rose-600 px-2.5 py-2 rounded-lg border border-slate-200 transition-all cursor-pointer" title="Benachrichtigungen aktivieren">
+                    <i class="fa-solid fa-bell"></i>
+                </button>
+                <button onclick="handleLogout()" class="text-xs font-medium text-slate-500 hover:text-rose-600 px-3 py-2 rounded-lg border border-slate-200 transition-all cursor-pointer">
+                    <i class="fa-solid fa-right-from-bracket mr-1"></i> Wechseln
+                </button>
+            </div>
         </header>
 
         <!-- Hauptinhalt (Tabs) -->
@@ -306,11 +311,23 @@
             mqttClient.on('message', (incomingTopic, payload) => {
                 if (incomingTopic === topic) {
                     try {
-                        const remoteData = JSON.parse(payload.toString());
-                        if (remoteData && remoteData.calendar) {
-                            data = remoteData;
-                            safeStorage.setItem(getStorageKey(), JSON.stringify(data));
-                            renderAll();
+                        const incomingStr = payload.toString();
+                        const currentStr = JSON.stringify(data);
+                        
+                        // Nur benachrichtigen, wenn die Änderung vom Partner kommt (nicht unsere eigene Nachricht)
+                        if (incomingStr !== currentStr) {
+                            const remoteData = JSON.parse(incomingStr);
+                            if (remoteData && remoteData.calendar) {
+                                if ('Notification' in window && Notification.permission === 'granted') {
+                                    new Notification('Haushalts-Manager 🏠', {
+                                        body: 'Es gibt Neuigkeiten im gemeinsamen Haushalt!',
+                                        icon: 'https://cdn-icons-png.flaticon.com/512/3076/3076753.png'
+                                    });
+                                }
+                                data = remoteData;
+                                safeStorage.setItem(getStorageKey(), JSON.stringify(data));
+                                renderAll();
+                            }
                         }
                     } catch(e) {}
                 }
@@ -319,6 +336,33 @@
             mqttClient.on('error', () => {
                 if (statusEl) statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-amber-600"></i> Lokal (Offline)';
             });
+        }
+
+        window.requestNotificationPermission = function() {
+            if (!('Notification' in window)) {
+                alert('Dein Browser unterstützt keine Benachrichtigungen.');
+                return;
+            }
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    new Notification('Haushalts-Manager', {
+                        body: 'Benachrichtigungen sind erfolgreich aktiviert!',
+                        icon: 'https://cdn-icons-png.flaticon.com/512/3076/3076753.png'
+                    });
+                    updateNotifButton();
+                } else {
+                    alert('Benachrichtigungen wurden abgelehnt. Du kannst sie in den Browsereinstellungen wieder aktivieren.');
+                }
+            });
+        };
+
+        function updateNotifButton() {
+            const btn = document.getElementById('notif-btn');
+            if (!btn) return;
+            if ('Notification' in window && Notification.permission === 'granted') {
+                btn.classList.add('bg-rose-50', 'text-rose-600', 'border-rose-200');
+                btn.title = 'Benachrichtigungen aktiv';
+            }
         }
 
         function init() {
@@ -334,6 +378,7 @@
                 
                 loadLocalData();
                 initMQTT();
+                updateNotifButton();
             } else {
                 if (loginScreen) loginScreen.classList.remove('hidden');
                 if (appScreen) appScreen.classList.add('hidden');
