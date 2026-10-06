@@ -64,12 +64,32 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-lg font-bold text-slate-900">Gemeinsamer Kalender</h3>
-                        <p class="text-xs text-slate-400">Übersicht aller anstehenden Termine</p>
+                        <p class="text-xs text-slate-400">Monats- und Listenansicht</p>
                     </div>
                     <button onclick="openModal('calendar-modal')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
                         <i class="fa-solid fa-plus mr-1"></i> Termin
                     </button>
                 </div>
+
+                <!-- Kalender Steuerung & Ansicht-Umschalter -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <button onclick="changeMonth(-1)" class="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 flex items-center justify-center cursor-pointer"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                            <span id="calendar-month-title" class="font-bold text-sm text-slate-800 w-36 text-center">Oktober 2026</span>
+                            <button onclick="changeMonth(1)" class="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 flex items-center justify-center cursor-pointer"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+                        </div>
+                        <div class="flex bg-slate-200/70 p-1 rounded-xl">
+                            <button onclick="setCalendarView('month')" id="view-btn-month" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-white text-slate-800 shadow-xs transition cursor-pointer">Monat</button>
+                            <button onclick="setCalendarView('list')" id="view-btn-list" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 transition cursor-pointer">Liste</button>
+                        </div>
+                    </div>
+
+                    <!-- Monats-Grid Container -->
+                    <div id="calendar-grid-container" class="space-y-2 pt-2"></div>
+                </div>
+
+                <!-- Termin-Liste für den Monat / Agenda -->
                 <div id="calendar-list" class="space-y-3"></div>
             </section>
 
@@ -150,7 +170,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Kategorie / Name</label>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Kategorie</label>
                         <input type="text" id="cal-category" placeholder="z.B. Arbeit" value="Termin" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
                     </div>
                     <div>
@@ -158,9 +178,20 @@
                         <input type="color" id="cal-color" value="#e11d48" class="w-full h-[42px] rounded-xl border border-slate-200 cursor-pointer p-1 bg-slate-50">
                     </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Notiz / Details (opt.)</label>
-                    <input type="text" id="cal-desc" placeholder="z.B. Adresse oder wichtige Info" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Wiederholung</label>
+                        <select id="cal-recurrence" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                            <option value="none">Einmalig</option>
+                            <option value="weekly">Wöchentlich</option>
+                            <option value="monthly">Monatlich</option>
+                            <option value="yearly">Jährlich</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Notiz (opt.)</label>
+                        <input type="text" id="cal-desc" placeholder="Details" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                    </div>
                 </div>
                 <div class="flex space-x-3 pt-2">
                     <button onclick="closeModal('calendar-modal')" class="flex-1 py-2.5 bg-slate-100 text-slate-600 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
@@ -264,6 +295,10 @@
         const categories = ['Vorratskammer', 'Kühlschrank & Tiefkühler', 'Bad & Drogerie', 'Haushalt & Sonstiges'];
         let mqttClient = null;
 
+        // Kalender Ansichts-Zustand
+        let currentCalendarDate = new Date();
+        let calendarViewMode = 'month'; // 'month' oder 'list'
+
         function getStorageKey() {
             return 'household_data_' + (currentHousehold ? currentHousehold.trim().toLowerCase() : 'default');
         }
@@ -314,7 +349,6 @@
                         const incomingStr = payload.toString();
                         const currentStr = JSON.stringify(data);
                         
-                        // Nur benachrichtigen, wenn die Änderung vom Partner kommt (nicht unsere eigene Nachricht)
                         if (incomingStr !== currentStr) {
                             const remoteData = JSON.parse(incomingStr);
                             if (remoteData && remoteData.calendar) {
@@ -351,7 +385,7 @@
                     });
                     updateNotifButton();
                 } else {
-                    alert('Benachrichtigungen wurden abgelehnt. Du kannst sie in den Browsereinstellungen wieder aktivieren.');
+                    alert('Benachrichtigungen wurden abgelehnt.');
                 }
             });
         };
@@ -422,16 +456,38 @@
         window.openModal = function(id) { document.getElementById(id).classList.remove('hidden'); };
         window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); };
 
+        window.setCalendarView = function(view) {
+            calendarViewMode = view;
+            const btnMonth = document.getElementById('view-btn-month');
+            const btnList = document.getElementById('view-btn-list');
+            if (view === 'month') {
+                btnMonth.className = "px-3 py-1.5 text-xs font-bold rounded-lg bg-white text-slate-800 shadow-xs transition cursor-pointer";
+                btnList.className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 transition cursor-pointer";
+            } else {
+                btnList.className = "px-3 py-1.5 text-xs font-bold rounded-lg bg-white text-slate-800 shadow-xs transition cursor-pointer";
+                btnMonth.className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 transition cursor-pointer";
+            }
+            renderCalendar();
+        };
+
+        window.changeMonth = function(direction) {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + direction);
+            renderCalendar();
+        };
+
         window.saveCalendar = function() {
             const title = document.getElementById('cal-title').value.trim();
             const date = document.getElementById('cal-date').value;
             const time = document.getElementById('cal-time').value;
             const category = document.getElementById('cal-category').value.trim() || 'Termin';
             const color = document.getElementById('cal-color').value || '#e11d48';
+            const recurrence = document.getElementById('cal-recurrence').value || 'none';
             const desc = document.getElementById('cal-desc').value.trim();
 
             if (!title) { alert('Bitte einen Titel eingeben.'); return; }
-            data.calendar.push({ id: Date.now(), title, date, time, category, color, desc });
+            if (!date) { alert('Bitte ein Datum wählen.'); return; }
+
+            data.calendar.push({ id: Date.now(), title, date, time, category, color, recurrence, desc });
             saveData();
             closeModal('calendar-modal');
             
@@ -501,44 +557,125 @@
             return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
         }
 
+        // Prüfen, ob ein Termin in einen bestimmten Monat fällt (inkl. Wiederholungen)
+        function getEventsForMonth(year, month) {
+            const events = [];
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            (data.calendar || []).forEach(item => {
+                if (!item.date) return;
+                const parts = item.date.split('-');
+                const itemYear = parseInt(parts[0]);
+                const itemMonth = parseInt(parts[1]) - 1;
+                const itemDay = parseInt(parts[2]);
+
+                if (item.recurrence === 'yearly') {
+                    if (itemMonth === month && itemDay <= daysInMonth) {
+                        events.push({ ...item, computedDate: `${year}-${String(month+1).padStart(2,'0')}-${String(itemDay).padStart(2,'0')}` });
+                    }
+                } else if (item.recurrence === 'monthly') {
+                    if ((itemYear < year || (itemYear === year && itemMonth <= month)) && itemDay <= daysInMonth) {
+                        events.push({ ...item, computedDate: `${year}-${String(month+1).padStart(2,'0')}-${String(itemDay).padStart(2,'0')}` });
+                    }
+                } else if (item.recurrence === 'weekly') {
+                    // Wöchentliche Wiederholung durchgehen
+                    let d = new Date(itemYear, itemMonth, itemDay);
+                    const targetStart = new Date(year, month, 1);
+                    const targetEnd = new Date(year, month + 1, daysInMonth);
+                    while (d <= targetEnd) {
+                        if (d >= targetStart && d <= targetEnd) {
+                            events.push({ ...item, computedDate: d.toISOString().split('T')[0] });
+                        }
+                        d.setDate(d.getDate() + 7);
+                    }
+                } else {
+                    // Einmalig
+                    if (itemYear === year && itemMonth === month) {
+                        events.push({ ...item, computedDate: item.date });
+                    }
+                }
+            });
+
+            events.sort((a, b) => (a.computedDate + (a.time || '00:00')) > (b.computedDate + (b.time || '00:00')) ? 1 : -1);
+            return events;
+        }
+
         function renderAll() { renderCalendar(); renderTasks(); renderInventory(); renderShopping(); }
 
         function renderCalendar() {
             const container = document.getElementById('calendar-list');
-            if (!container) return;
-            
-            if (!data.calendar || data.calendar.length === 0) { 
-                container.innerHTML = `<div class="text-center py-12 text-slate-400 text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">Keine Termine vorhanden.</div>`; 
+            const gridContainer = document.getElementById('calendar-grid-container');
+            const monthTitleEl = document.getElementById('calendar-month-title');
+            if (!container || !gridContainer) return;
+
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+            const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+            monthTitleEl.textContent = `${monthNames[month]} ${year}`;
+
+            const monthEvents = getEventsForMonth(year, month);
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            // 1. MONATS-GRID RENDERN
+            if (calendarViewMode === 'month') {
+                gridContainer.classList.remove('hidden');
+                const firstDayIndex = (new Date(year, month, 1).getDay() + 6) % 7; // Montag = 0
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                let gridHtml = `
+                    <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
+                        <div>Mo</div><div>Di</div><div>Mi</div><div>Do</div><div>Fr</div><div>Sa</div><div>So</div>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1">
+                `;
+
+                for (let i = 0; i < firstDayIndex; i++) {
+                    gridHtml += `<div class="h-10 bg-transparent"></div>`;
+                }
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                    const isToday = (dateStr === todayStr);
+                    const dayEvents = monthEvents.filter(e => e.computedDate === dateStr);
+
+                    gridHtml += `
+                        <div onclick="openModalForDate('${dateStr}')" class="h-11 rounded-xl border border-slate-200/80 bg-white flex flex-col items-center justify-between py-1 cursor-pointer hover:border-rose-500 transition relative ${isToday ? 'bg-rose-50 border-rose-500 font-bold' : ''}">
+                            <span class="text-xs ${isToday ? 'text-rose-600 font-bold' : 'text-slate-700'}">${day}</span>
+                            <div class="flex space-x-0.5 px-1 pb-0.5 overflow-hidden w-full justify-center">
+                                ${dayEvents.slice(0, 3).map(e => `<span style="background-color: ${e.color || '#e11d48'};" class="w-1.5 h-1.5 rounded-full"></span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                gridHtml += `</div>`;
+                gridContainer.innerHTML = gridHtml;
+            } else {
+                gridContainer.classList.add('hidden');
+            }
+
+            // 2. LISTEN- / AGENDA-ANSICHT RENDERN
+            if (monthEvents.length === 0) { 
+                container.innerHTML = `<div class="text-center py-12 text-slate-400 text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">Keine Termine im ${monthNames[month]}.</div>`; 
                 return; 
             }
 
-            data.calendar.sort((a, b) => {
-                if (!a.date) return 1;
-                if (!b.date) return -1;
-                return (a.date + (a.time || '00:00')) > (b.date + (b.time || '00:00')) ? 1 : -1;
-            });
-
-            const todayStr = new Date().toISOString().split('T')[0];
-
-            container.innerHTML = data.calendar.map(item => {
+            container.innerHTML = monthEvents.map(item => {
                 const color = item.color || '#e11d48';
                 const paleBg = hexToRgba(color, 0.12);
-
-                let dateDisplay = item.date || 'Kein Datum';
-                if (item.date === todayStr) {
-                    dateDisplay = 'Heute';
-                }
+                const isToday = (item.computedDate === todayStr);
+                const recurrenceText = item.recurrence === 'weekly' ? '🔁 Wöchentlich' : item.recurrence === 'monthly' ? '🔁 Monatlich' : item.recurrence === 'yearly' ? '🔁 Jährlich' : '';
 
                 return `
                     <div style="background-color: ${paleBg}; border-color: ${color};" class="border-2 rounded-2xl p-4 shadow-sm flex items-center justify-between space-x-3 transition">
                         <div class="space-y-1.5 flex-1">
                             <div class="flex items-center space-x-2">
                                 <span style="background-color: ${color};" class="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full shadow-xs">${item.category || 'Termin'}</span>
-                                ${item.date === todayStr ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white animate-pulse shadow-xs">Heutiger Termin</span>' : ''}
+                                ${isToday ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white animate-pulse shadow-xs">Heute</span>' : ''}
+                                ${recurrenceText ? `<span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/70 text-slate-600">${recurrenceText}</span>` : ''}
                             </div>
                             <h4 class="font-bold text-slate-900 text-sm">${item.title}</h4>
                             <div class="flex items-center space-x-3 text-xs text-slate-700 font-medium">
-                                <span><i class="fa-regular fa-calendar mr-1" style="color: ${color};"></i>${dateDisplay}</span>
+                                <span><i class="fa-regular fa-calendar mr-1" style="color: ${color};"></i>${item.computedDate}</span>
                                 ${item.time ? `<span><i class="fa-regular fa-clock mr-1" style="color: ${color};"></i>${item.time} Uhr</span>` : ''}
                             </div>
                             ${item.desc ? `<p class="text-xs text-slate-600 italic pt-0.5"><i class="fa-regular fa-note-sticky mr-1"></i>${item.desc}</p>` : ''}
@@ -548,6 +685,11 @@
                 `;
             }).join('');
         }
+
+        window.openModalForDate = function(dateStr) {
+            document.getElementById('cal-date').value = dateStr;
+            openModal('calendar-modal');
+        };
 
         function renderTasks() {
             const container = document.getElementById('task-list');
