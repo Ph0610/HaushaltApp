@@ -143,14 +143,15 @@
                         <input type="time" id="cal-time" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
                     </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Kategorie</label>
-                    <select id="cal-category" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
-                        <option value="Allgemein">Allgemein</option>
-                        <option value="Termin / Amt">Termin / Amt</option>
-                        <option value="Freizeit / Urlaub">Freizeit / Urlaub</option>
-                        <option value="Haushalt / Handwerker">Haushalt / Handwerker</option>
-                    </select>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Kategorie / Name</label>
+                        <input type="text" id="cal-category" placeholder="z.B. Arbeit" value="Termin" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Farbe</label>
+                        <input type="color" id="cal-color" value="#e11d48" class="w-full h-[42px] rounded-xl border border-slate-200 cursor-pointer p-1 bg-slate-50">
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Notiz / Details (opt.)</label>
@@ -380,11 +381,12 @@
             const title = document.getElementById('cal-title').value.trim();
             const date = document.getElementById('cal-date').value;
             const time = document.getElementById('cal-time').value;
-            const category = document.getElementById('cal-category').value;
+            const category = document.getElementById('cal-category').value.trim() || 'Termin';
+            const color = document.getElementById('cal-color').value || '#e11d48';
             const desc = document.getElementById('cal-desc').value.trim();
 
             if (!title) { alert('Bitte einen Titel eingeben.'); return; }
-            data.calendar.push({ id: Date.now(), title, date, time, category, desc });
+            data.calendar.push({ id: Date.now(), title, date, time, category, color, desc });
             saveData();
             closeModal('calendar-modal');
             
@@ -447,6 +449,13 @@
             alert('"' + title + '" wurde zur Einkaufsliste hinzugefügt!');
         };
 
+        function hexToRgba(hex, alpha) {
+            let c = hex.replace('#', '');
+            if (c.length === 3) c = c.split('').map(x => x + x).join('');
+            const num = parseInt(c, 16);
+            return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
+        }
+
         function renderAll() { renderCalendar(); renderTasks(); renderInventory(); renderShopping(); }
 
         function renderCalendar() {
@@ -458,7 +467,6 @@
                 return; 
             }
 
-            // Automatisch nach Datum & Uhrzeit sortieren (nah am heutigen Tag zuerst)
             data.calendar.sort((a, b) => {
                 if (!a.date) return 1;
                 if (!b.date) return -1;
@@ -468,10 +476,8 @@
             const todayStr = new Date().toISOString().split('T')[0];
 
             container.innerHTML = data.calendar.map(item => {
-                let badgeColor = 'bg-slate-100 text-slate-600';
-                if (item.category === 'Termin / Amt') badgeColor = 'bg-amber-100 text-amber-700';
-                if (item.category === 'Freizeit / Urlaub') badgeColor = 'bg-emerald-100 text-emerald-700';
-                if (item.category === 'Haushalt / Handwerker') badgeColor = 'bg-blue-100 text-blue-700';
+                const color = item.color || '#e11d48';
+                const paleBg = hexToRgba(color, 0.12);
 
                 let dateDisplay = item.date || 'Kein Datum';
                 if (item.date === todayStr) {
@@ -479,18 +485,18 @@
                 }
 
                 return `
-                    <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center justify-between space-x-3">
+                    <div style="background-color: ${paleBg}; border-color: ${color};" class="border-2 rounded-2xl p-4 shadow-sm flex items-center justify-between space-x-3 transition">
                         <div class="space-y-1.5 flex-1">
                             <div class="flex items-center space-x-2">
-                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeColor}">${item.category || 'Allgemein'}</span>
-                                ${item.date === todayStr ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 animate-pulse">Heutiger Termin</span>' : ''}
+                                <span style="background-color: ${color};" class="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full shadow-xs">${item.category || 'Termin'}</span>
+                                ${item.date === todayStr ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white animate-pulse shadow-xs">Heutiger Termin</span>' : ''}
                             </div>
-                            <h4 class="font-bold text-slate-800 text-sm">${item.title}</h4>
-                            <div class="flex items-center space-x-3 text-xs text-slate-500">
-                                <span><i class="fa-regular fa-calendar mr-1 text-rose-500"></i>${dateDisplay}</span>
-                                ${item.time ? `<span><i class="fa-regular fa-clock mr-1 text-rose-500"></i>${item.time} Uhr</span>` : ''}
+                            <h4 class="font-bold text-slate-900 text-sm">${item.title}</h4>
+                            <div class="flex items-center space-x-3 text-xs text-slate-700 font-medium">
+                                <span><i class="fa-regular fa-calendar mr-1" style="color: ${color};"></i>${dateDisplay}</span>
+                                ${item.time ? `<span><i class="fa-regular fa-clock mr-1" style="color: ${color};"></i>${item.time} Uhr</span>` : ''}
                             </div>
-                            ${item.desc ? `<p class="text-xs text-slate-400 italic pt-0.5"><i class="fa-regular fa-note-sticky mr-1"></i>${item.desc}</p>` : ''}
+                            ${item.desc ? `<p class="text-xs text-slate-600 italic pt-0.5"><i class="fa-regular fa-note-sticky mr-1"></i>${item.desc}</p>` : ''}
                         </div>
                         <button onclick="deleteCalendar(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer transition"><i class="fa-solid fa-trash-can text-sm"></i></button>
                     </div>
