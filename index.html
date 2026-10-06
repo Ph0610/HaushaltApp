@@ -57,7 +57,10 @@
             <!-- TAB 1: KALENDER -->
             <section id="tab-calendar" class="tab-content p-6 space-y-4">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-bold text-slate-900">Gemeinsamer Kalender</h3>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">Gemeinsamer Kalender</h3>
+                        <p class="text-xs text-slate-400">Übersicht aller anstehenden Termine</p>
+                    </div>
                     <button onclick="openModal('calendar-modal')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
                         <i class="fa-solid fa-plus mr-1"></i> Termin
                     </button>
@@ -128,7 +131,7 @@
             <div class="space-y-3">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Titel</label>
-                    <input type="text" id="cal-title" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                    <input type="text" id="cal-title" placeholder="z.B. Geburtstag Oma" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
@@ -136,9 +139,22 @@
                         <input type="date" id="cal-date" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Uhrzeit</label>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Uhrzeit (opt.)</label>
                         <input type="time" id="cal-time" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
                     </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Kategorie</label>
+                    <select id="cal-category" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                        <option value="Allgemein">Allgemein</option>
+                        <option value="Termin / Amt">Termin / Amt</option>
+                        <option value="Freizeit / Urlaub">Freizeit / Urlaub</option>
+                        <option value="Haushalt / Handwerker">Haushalt / Handwerker</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Notiz / Details (opt.)</label>
+                    <input type="text" id="cal-desc" placeholder="z.B. Adresse oder wichtige Info" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
                 </div>
                 <div class="flex space-x-3 pt-2">
                     <button onclick="closeModal('calendar-modal')" class="flex-1 py-2.5 bg-slate-100 text-slate-600 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
@@ -217,7 +233,6 @@
 
     <!-- ECHTZEIT MQTT SYNCHRONISATIONS-LOGIK & PWA -->
     <script>
-        // Service Worker registrieren für PWA-Installation
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js').catch(() => {});
         }
@@ -267,7 +282,6 @@
             } catch(e) {}
             renderAll();
 
-            // Live an Partner senden mit retain: true
             if (mqttClient && mqttClient.connected && currentHousehold) {
                 const topic = 'haushalt_sync_2026_' + currentHousehold.trim().toLowerCase();
                 mqttClient.publish(topic, JSON.stringify(data), { retain: true });
@@ -366,13 +380,18 @@
             const title = document.getElementById('cal-title').value.trim();
             const date = document.getElementById('cal-date').value;
             const time = document.getElementById('cal-time').value;
+            const category = document.getElementById('cal-category').value;
+            const desc = document.getElementById('cal-desc').value.trim();
+
             if (!title) { alert('Bitte einen Titel eingeben.'); return; }
-            data.calendar.push({ id: Date.now(), title, date, time });
+            data.calendar.push({ id: Date.now(), title, date, time, category, desc });
             saveData();
             closeModal('calendar-modal');
+            
             document.getElementById('cal-title').value = '';
             document.getElementById('cal-date').value = '';
             document.getElementById('cal-time').value = '';
+            document.getElementById('cal-desc').value = '';
         };
 
         window.saveTask = function() {
@@ -433,29 +452,57 @@
         function renderCalendar() {
             const container = document.getElementById('calendar-list');
             if (!container) return;
+            
             if (!data.calendar || data.calendar.length === 0) { 
-                container.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm">Keine Termine vorhanden.</div>`; 
+                container.innerHTML = `<div class="text-center py-12 text-slate-400 text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">Keine Termine vorhanden.</div>`; 
                 return; 
             }
-            container.innerHTML = data.calendar.map(item => `
-                <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center justify-between">
-                    <div class="space-y-1">
-                        <h4 class="font-semibold text-slate-800 text-sm">${item.title}</h4>
-                        <div class="flex items-center space-x-3 text-xs text-slate-500">
-                            <span><i class="fa-regular fa-calendar mr-1"></i>${item.date || 'Kein Datum'}</span>
-                            ${item.time ? `<span><i class="fa-regular fa-clock mr-1"></i>${item.time}</span>` : ''}
+
+            // Automatisch nach Datum & Uhrzeit sortieren (nah am heutigen Tag zuerst)
+            data.calendar.sort((a, b) => {
+                if (!a.date) return 1;
+                if (!b.date) return -1;
+                return (a.date + (a.time || '00:00')) > (b.date + (b.time || '00:00')) ? 1 : -1;
+            });
+
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            container.innerHTML = data.calendar.map(item => {
+                let badgeColor = 'bg-slate-100 text-slate-600';
+                if (item.category === 'Termin / Amt') badgeColor = 'bg-amber-100 text-amber-700';
+                if (item.category === 'Freizeit / Urlaub') badgeColor = 'bg-emerald-100 text-emerald-700';
+                if (item.category === 'Haushalt / Handwerker') badgeColor = 'bg-blue-100 text-blue-700';
+
+                let dateDisplay = item.date || 'Kein Datum';
+                if (item.date === todayStr) {
+                    dateDisplay = 'Heute';
+                }
+
+                return `
+                    <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center justify-between space-x-3">
+                        <div class="space-y-1.5 flex-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeColor}">${item.category || 'Allgemein'}</span>
+                                ${item.date === todayStr ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 animate-pulse">Heutiger Termin</span>' : ''}
+                            </div>
+                            <h4 class="font-bold text-slate-800 text-sm">${item.title}</h4>
+                            <div class="flex items-center space-x-3 text-xs text-slate-500">
+                                <span><i class="fa-regular fa-calendar mr-1 text-rose-500"></i>${dateDisplay}</span>
+                                ${item.time ? `<span><i class="fa-regular fa-clock mr-1 text-rose-500"></i>${item.time} Uhr</span>` : ''}
+                            </div>
+                            ${item.desc ? `<p class="text-xs text-slate-400 italic pt-0.5"><i class="fa-regular fa-note-sticky mr-1"></i>${item.desc}</p>` : ''}
                         </div>
+                        <button onclick="deleteCalendar(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer transition"><i class="fa-solid fa-trash-can text-sm"></i></button>
                     </div>
-                    <button onclick="deleteCalendar(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer"><i class="fa-solid fa-trash-can text-sm"></i></button>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function renderTasks() {
             const container = document.getElementById('task-list');
             if (!container) return;
             if (!data.tasks || data.tasks.length === 0) { 
-                container.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm">Keine Aufgaben vorhanden.</div>`; 
+                container.innerHTML = `<div class="text-center py-12 text-slate-400 text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">Keine Aufgaben vorhanden.</div>`; 
                 return; 
             }
             container.innerHTML = data.tasks.map(item => `
@@ -504,7 +551,7 @@
             const container = document.getElementById('shopping-list');
             if (!container) return;
             if (!data.shopping || data.shopping.length === 0) { 
-                container.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm">Einkaufsliste ist leer.</div>`; 
+                container.innerHTML = `<div class="text-center py-12 text-slate-400 text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">Einkaufsliste ist leer.</div>`; 
                 return; 
             }
             container.innerHTML = data.shopping.map(item => `
