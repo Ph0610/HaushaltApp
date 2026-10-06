@@ -7,28 +7,33 @@
     
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- MQTT-Bibliothek für Echtzeit-Verbindung -->
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col select-none">
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans min-h-screen flex flex-col select-none transition-colors duration-200">
 
     <!-- 1. LOGIN SCREEN -->
-    <div id="login-screen" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 space-y-6">
+    <div id="login-screen" class="fixed inset-0 bg-slate-900/70 dark:bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-3xl shadow-2xl max-w-md w-full p-8 space-y-6">
             <div class="text-center space-y-2">
-                <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl mx-auto flex items-center justify-center text-2xl shadow-inner">
+                <div class="w-16 h-16 bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 rounded-2xl mx-auto flex items-center justify-center text-2xl shadow-inner">
                     <i class="fa-solid fa-house-heart"></i>
                 </div>
-                <h1 class="text-2xl font-bold tracking-tight text-slate-900">Haushalts-Manager</h1>
-                <p class="text-sm text-slate-500">Tippt denselben Namen ein, um euch zu verbinden.</p>
+                <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Haushalts-Manager</h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Tippt denselben Namen ein, um euch zu verbinden.</p>
             </div>
             
             <div class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Gemeinsamer Haushalts-Name</label>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Gemeinsamer Haushalts-Name</label>
                     <input type="text" id="household-input" placeholder="z.B. unser-zuhause" 
-                        class="w-full px-4 py-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm bg-slate-50">
+                        class="w-full px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500">
                 </div>
                 <button type="button" onclick="handleLogin()" class="w-full py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl shadow-lg shadow-rose-600/35 transition-all cursor-pointer">
                     Haushalt öffnen
@@ -38,19 +43,23 @@
     </div>
 
     <!-- 2. HAUPT-APP CONTAINER -->
-    <div id="app-screen" class="hidden flex-1 flex flex-col max-w-md w-full mx-auto bg-white shadow-2xl min-h-screen sm:min-h-0 sm:my-6 sm:rounded-3xl overflow-hidden relative">
+    <div id="app-screen" class="hidden flex-1 flex flex-col max-w-md w-full mx-auto bg-white dark:bg-slate-900 shadow-2xl min-h-screen sm:min-h-0 sm:my-6 sm:rounded-3xl overflow-hidden relative border border-transparent dark:border-slate-800">
         
         <!-- Header -->
-        <header class="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
+        <header class="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
             <div>
                 <span id="sync-status" class="text-[10px] font-bold text-amber-500 uppercase tracking-widest"><i class="fa-solid fa-circle-notch fa-spin"></i> Verbinde...</span>
-                <h2 id="display-household" class="text-base font-bold text-slate-900"></h2>
+                <h2 id="display-household" class="text-base font-bold text-slate-900 dark:text-white"></h2>
             </div>
             <div class="flex items-center space-x-2">
-                <button onclick="requestNotificationPermission()" id="notif-btn" class="text-xs font-medium text-slate-500 hover:text-rose-600 px-2.5 py-2 rounded-lg border border-slate-200 transition-all cursor-pointer" title="Benachrichtigungen aktivieren">
+                <!-- Dark Mode Umschalter -->
+                <button onclick="toggleTheme()" id="theme-btn" class="text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 transition-all cursor-pointer" title="Dark Mode umschalten">
+                    <i class="fa-solid fa-moon" id="theme-icon"></i>
+                </button>
+                <button onclick="requestNotificationPermission()" id="notif-btn" class="text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 transition-all cursor-pointer" title="Benachrichtigungen aktivieren">
                     <i class="fa-solid fa-bell"></i>
                 </button>
-                <button onclick="handleLogout()" class="text-xs font-medium text-slate-500 hover:text-rose-600 px-3 py-2 rounded-lg border border-slate-200 transition-all cursor-pointer">
+                <button onclick="handleLogout()" class="text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 transition-all cursor-pointer">
                     <i class="fa-solid fa-right-from-bracket mr-1"></i> Wechseln
                 </button>
             </div>
@@ -63,8 +72,8 @@
             <section id="tab-calendar" class="tab-content p-6 space-y-4">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h3 class="text-lg font-bold text-slate-900">Gemeinsamer Kalender</h3>
-                        <p class="text-xs text-slate-400">Monats- und Listenansicht</p>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Gemeinsamer Kalender</h3>
+                        <p class="text-xs text-slate-400 dark:text-slate-400">Monats- und Listenansicht</p>
                     </div>
                     <button onclick="openModalForDate('')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
                         <i class="fa-solid fa-plus mr-1"></i> Termin
@@ -72,16 +81,16 @@
                 </div>
 
                 <!-- Kalender Steuerung & Ansicht-Umschalter -->
-                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 shadow-sm">
+                <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-4 space-y-3 shadow-sm">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2">
-                            <button onclick="changeMonth(-1)" class="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 flex items-center justify-center cursor-pointer"><i class="fa-solid fa-chevron-left text-xs"></i></button>
-                            <span id="calendar-month-title" class="font-bold text-sm text-slate-800 w-36 text-center">Oktober 2026</span>
-                            <button onclick="changeMonth(1)" class="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 flex items-center justify-center cursor-pointer"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+                            <button onclick="changeMonth(-1)" class="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center cursor-pointer"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                            <span id="calendar-month-title" class="font-bold text-sm text-slate-800 dark:text-slate-100 w-36 text-center">Oktober 2026</span>
+                            <button onclick="changeMonth(1)" class="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center cursor-pointer"><i class="fa-solid fa-chevron-right text-xs"></i></button>
                         </div>
-                        <div class="flex bg-slate-200/70 p-1 rounded-xl">
-                            <button onclick="setCalendarView('month')" id="view-btn-month" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-white text-slate-800 shadow-xs transition cursor-pointer">Monat</button>
-                            <button onclick="setCalendarView('list')" id="view-btn-list" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 transition cursor-pointer">Liste</button>
+                        <div class="flex bg-slate-200/70 dark:bg-slate-700 p-1 rounded-xl">
+                            <button onclick="setCalendarView('month')" id="view-btn-month" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-xs transition cursor-pointer">Monat</button>
+                            <button onclick="setCalendarView('list')" id="view-btn-list" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 dark:text-slate-300 transition cursor-pointer">Liste</button>
                         </div>
                     </div>
 
@@ -89,14 +98,14 @@
                     <div id="calendar-grid-container" class="space-y-2 pt-2"></div>
                 </div>
 
-                <!-- Tages-Detailansicht oder Agenda-Liste -->
+                <!-- Alle Termine des Monats -->
                 <div id="calendar-content-container" class="space-y-3"></div>
             </section>
 
             <!-- TAB 2: AUFGABEN -->
             <section id="tab-tasks" class="tab-content hidden p-6 space-y-4">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-bold text-slate-900">Aufgaben & Fristen</h3>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Aufgaben & Fristen</h3>
                     <button onclick="openModal('task-modal')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
                         <i class="fa-solid fa-plus mr-1"></i> Aufgabe
                     </button>
@@ -107,7 +116,7 @@
             <!-- TAB 3: VORRAT -->
             <section id="tab-inventory" class="tab-content hidden p-6 space-y-4">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-bold text-slate-900">Vorrat nach Themen</h3>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Vorrat nach Themen</h3>
                     <button onclick="openModal('inventory-modal')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
                         <i class="fa-solid fa-plus mr-1"></i> Vorrat
                     </button>
@@ -118,7 +127,7 @@
             <!-- TAB 4: EINKAUFSLISTE -->
             <section id="tab-shopping" class="tab-content hidden p-6 space-y-4">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-bold text-slate-900">Einkaufsliste</h3>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Einkaufsliste</h3>
                     <button onclick="openModal('shopping-modal')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
                         <i class="fa-solid fa-plus mr-1"></i> Artikel
                     </button>
@@ -129,20 +138,20 @@
         </main>
 
         <!-- Untere Navigation -->
-        <nav class="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-4 py-2.5 flex justify-around items-center z-20 shadow-lg">
-            <button onclick="switchTab('calendar')" class="nav-btn flex flex-col items-center text-rose-600 cursor-pointer p-1" data-tab="calendar">
+        <nav class="absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 px-4 py-2.5 flex justify-around items-center z-20 shadow-lg">
+            <button onclick="switchTab('calendar')" class="nav-btn flex flex-col items-center text-rose-600 dark:text-rose-400 cursor-pointer p-1" data-tab="calendar">
                 <i class="fa-solid fa-calendar-days text-lg"></i>
                 <span class="text-[10px] font-semibold mt-1">Kalender</span>
             </button>
-            <button onclick="switchTab('tasks')" class="nav-btn flex flex-col items-center text-slate-400 hover:text-slate-600 cursor-pointer p-1" data-tab="tasks">
+            <button onclick="switchTab('tasks')" class="nav-btn flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer p-1" data-tab="tasks">
                 <i class="fa-solid fa-list-check text-lg"></i>
                 <span class="text-[10px] font-semibold mt-1">Aufgaben</span>
             </button>
-            <button onclick="switchTab('inventory')" class="nav-btn flex flex-col items-center text-slate-400 hover:text-slate-600 cursor-pointer p-1" data-tab="inventory">
+            <button onclick="switchTab('inventory')" class="nav-btn flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer p-1" data-tab="inventory">
                 <i class="fa-solid fa-boxes-stacked text-lg"></i>
                 <span class="text-[10px] font-semibold mt-1">Vorrat</span>
             </button>
-            <button onclick="switchTab('shopping')" class="nav-btn flex flex-col items-center text-slate-400 hover:text-slate-600 cursor-pointer p-1" data-tab="shopping">
+            <button onclick="switchTab('shopping')" class="nav-btn flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer p-1" data-tab="shopping">
                 <i class="fa-solid fa-cart-shopping text-lg"></i>
                 <span class="text-[10px] font-semibold mt-1">Einkauf</span>
             </button>
@@ -150,38 +159,38 @@
     </div>
 
     <!-- MODALS -->
-    <div id="calendar-modal" class="modal hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <h3 class="text-base font-bold text-slate-900">Neuen Termin hinzufügen</h3>
+    <div id="calendar-modal" class="modal hidden fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-slate-900 dark:text-slate-100">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Neuen Termin hinzufügen</h3>
             <div class="space-y-3">
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Titel</label>
-                    <input type="text" id="cal-title" placeholder="z.B. Geburtstag Oma" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Titel</label>
+                    <input type="text" id="cal-title" placeholder="z.B. Geburtstag Oma" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Datum</label>
-                        <input type="date" id="cal-date" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Datum</label>
+                        <input type="date" id="cal-date" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Uhrzeit (opt.)</label>
-                        <input type="time" id="cal-time" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Kategorie</label>
-                        <input type="text" id="cal-category" placeholder="z.B. Arbeit" value="Termin" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Farbe</label>
-                        <input type="color" id="cal-color" value="#e11d48" class="w-full h-[42px] rounded-xl border border-slate-200 cursor-pointer p-1 bg-slate-50">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Uhrzeit (opt.)</label>
+                        <input type="time" id="cal-time" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Wiederholung</label>
-                        <select id="cal-recurrence" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Kategorie</label>
+                        <input type="text" id="cal-category" placeholder="z.B. Arbeit" value="Termin" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Farbe</label>
+                        <input type="color" id="cal-color" value="#e11d48" class="w-full h-[42px] rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer p-1 bg-slate-50 dark:bg-slate-800">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Wiederholung</label>
+                        <select id="cal-recurrence" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                             <option value="none">Einmalig</option>
                             <option value="weekly">Wöchentlich</option>
                             <option value="monthly">Monatlich</option>
@@ -189,55 +198,55 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Notiz (opt.)</label>
-                        <input type="text" id="cal-desc" placeholder="Details" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Notiz (opt.)</label>
+                        <input type="text" id="cal-desc" placeholder="Details" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                     </div>
                 </div>
                 <div class="flex space-x-3 pt-2">
-                    <button onclick="closeModal('calendar-modal')" class="flex-1 py-2.5 bg-slate-100 text-slate-600 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
+                    <button onclick="closeModal('calendar-modal')" class="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
                     <button onclick="saveCalendar()" class="flex-1 py-2.5 bg-rose-600 text-white font-semibold rounded-xl text-sm shadow-md cursor-pointer">Speichern</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="task-modal" class="modal hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <h3 class="text-base font-bold text-slate-900">Neue Aufgabe hinzufügen</h3>
+    <div id="task-modal" class="modal hidden fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-slate-900 dark:text-slate-100">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Neue Aufgabe hinzufügen</h3>
             <div class="space-y-3">
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Aufgabe</label>
-                    <input type="text" id="task-title" placeholder="z.B. Müll rausbringen" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Aufgabe</label>
+                    <input type="text" id="task-title" placeholder="z.B. Müll rausbringen" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Wer?</label>
-                        <input type="text" id="task-assignee" placeholder="Name" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Wer?</label>
+                        <input type="text" id="task-assignee" placeholder="Name" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Frist</label>
-                        <input type="date" id="task-due" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Frist</label>
+                        <input type="date" id="task-due" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                     </div>
                 </div>
                 <div class="flex space-x-3 pt-2">
-                    <button onclick="closeModal('task-modal')" class="flex-1 py-2.5 bg-slate-100 text-slate-600 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
+                    <button onclick="closeModal('task-modal')" class="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
                     <button onclick="saveTask()" class="flex-1 py-2.5 bg-rose-600 text-white font-semibold rounded-xl text-sm shadow-md cursor-pointer">Speichern</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="inventory-modal" class="modal hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <h3 class="text-base font-bold text-slate-900">Vorrat hinzufügen</h3>
+    <div id="inventory-modal" class="modal hidden fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-slate-900 dark:text-slate-100">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Vorrat hinzufügen</h3>
             <div class="space-y-3">
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Artikel</label>
-                    <input type="text" id="inv-title" placeholder="z.B. Olivenöl" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Artikel</label>
+                    <input type="text" id="inv-title" placeholder="z.B. Olivenöl" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Kategorie</label>
-                    <select id="inv-category" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Kategorie</label>
+                    <select id="inv-category" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                         <option value="Vorratskammer">Vorratskammer</option>
                         <option value="Kühlschrank & Tiefkühler">Kühlschrank & Tiefkühler</option>
                         <option value="Bad & Drogerie">Bad & Drogerie</option>
@@ -245,23 +254,23 @@
                     </select>
                 </div>
                 <div class="flex space-x-3 pt-2">
-                    <button onclick="closeModal('inventory-modal')" class="flex-1 py-2.5 bg-slate-100 text-slate-600 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
+                    <button onclick="closeModal('inventory-modal')" class="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
                     <button onclick="saveInventory()" class="flex-1 py-2.5 bg-rose-600 text-white font-semibold rounded-xl text-sm shadow-md cursor-pointer">Speichern</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="shopping-modal" class="modal hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <h3 class="text-base font-bold text-slate-900">Artikel einkaufen</h3>
+    <div id="shopping-modal" class="modal hidden fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-slate-900 dark:text-slate-100">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Artikel einkaufen</h3>
             <div class="space-y-3">
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Artikel</label>
-                    <input type="text" id="shop-title" placeholder="z.B. Milch" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Artikel</label>
+                    <input type="text" id="shop-title" placeholder="z.B. Milch" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                 </div>
                 <div class="flex space-x-3 pt-2">
-                    <button onclick="closeModal('shopping-modal')" class="flex-1 py-2.5 bg-slate-100 text-slate-600 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
+                    <button onclick="closeModal('shopping-modal')" class="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
                     <button onclick="saveShopping()" class="flex-1 py-2.5 bg-rose-600 text-white font-semibold rounded-xl text-sm shadow-md cursor-pointer">Speichern</button>
                 </div>
             </div>
@@ -290,16 +299,48 @@
             }
         };
 
+        // Dark Mode Initialisierung beim Start
+        let currentTheme = safeStorage.getItem('theme_mode') || 'light';
+        if (currentTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+        }
+
+        window.toggleTheme = function() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                safeStorage.setItem('theme_mode', 'light');
+                document.getElementById('theme-icon').className = "fa-solid fa-moon";
+            } else {
+                document.documentElement.classList.add('dark');
+                safeStorage.setItem('theme_mode', 'dark');
+                document.getElementById('theme-icon').className = "fa-solid fa-sun";
+            }
+        };
+
+        function updateThemeIcon() {
+            const icon = document.getElementById('theme-icon');
+            if (icon) {
+                icon.className = document.documentElement.classList.contains('dark') ? "fa-solid fa-sun" : "fa-solid fa-moon";
+            }
+        }
+
+        function getLocalDateString(d = new Date()) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        const clientId = 'client_' + Math.random().toString(36).substring(2, 9);
+
         let currentHousehold = safeStorage.getItem('household_code') || '';
         let data = { calendar: [], tasks: [], inventory: [], shopping: [] };
         const categories = ['Vorratskammer', 'Kühlschrank & Tiefkühler', 'Bad & Drogerie', 'Haushalt & Sonstiges'];
         let mqttClient = null;
 
-        // Kalender Ansichts-Zustand
         let currentCalendarDate = new Date();
-        let calendarViewMode = 'month'; // 'month' oder 'list'
-        let selectedDayStr = new Date().toISOString().split('T')[0];
-        let lastPublishedString = '';
+        let calendarViewMode = 'month';
+        let selectedDayStr = getLocalDateString();
 
         function getStorageKey() {
             return 'household_data_' + (currentHousehold ? currentHousehold.trim().toLowerCase() : 'default');
@@ -327,8 +368,11 @@
 
             if (mqttClient && mqttClient.connected && currentHousehold) {
                 const topic = 'haushalt_sync_2026_' + currentHousehold.trim().toLowerCase();
-                lastPublishedString = JSON.stringify(data);
-                mqttClient.publish(topic, lastPublishedString, { retain: true });
+                const messageObj = {
+                    senderId: clientId,
+                    payload: data
+                };
+                mqttClient.publish(topic, JSON.stringify(messageObj), { retain: true });
             }
         }
 
@@ -349,12 +393,10 @@
             mqttClient.on('message', (incomingTopic, payload) => {
                 if (incomingTopic === topic) {
                     try {
-                        const incomingStr = payload.toString();
-                        
-                        // Wenn die Nachricht von uns selbst kommt, ignorieren
-                        if (incomingStr === lastPublishedString) return;
+                        const parsed = JSON.parse(payload.toString());
+                        if (parsed.senderId === clientId) return;
 
-                        const remoteData = JSON.parse(incomingStr);
+                        const remoteData = parsed.payload;
                         if (remoteData && remoteData.calendar) {
                             if ('Notification' in window && Notification.permission === 'granted') {
                                 new Notification('Haushalts-Manager 🏠', {
@@ -397,7 +439,7 @@
             const btn = document.getElementById('notif-btn');
             if (!btn) return;
             if ('Notification' in window && Notification.permission === 'granted') {
-                btn.classList.add('bg-rose-50', 'text-rose-600', 'border-rose-200');
+                btn.classList.add('bg-rose-50', 'dark:bg-rose-950/60', 'text-rose-600', 'dark:text-rose-400', 'border-rose-200', 'dark:border-rose-800');
                 btn.title = 'Benachrichtigungen aktiv';
             }
         }
@@ -407,6 +449,8 @@
             const loginScreen = document.getElementById('login-screen');
             const appScreen = document.getElementById('app-screen');
             
+            updateThemeIcon();
+
             if (currentHousehold) {
                 if (loginScreen) loginScreen.classList.add('hidden');
                 if (appScreen) appScreen.classList.remove('hidden');
@@ -446,13 +490,13 @@
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById('tab-' + tabName).classList.remove('hidden');
             document.querySelectorAll('.nav-btn').forEach(b => {
-                b.classList.remove('text-rose-600');
-                b.classList.add('text-slate-400');
+                b.classList.remove('text-rose-600', 'dark:text-rose-400');
+                b.classList.add('text-slate-400', 'dark:text-slate-500');
             });
             const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
             if (activeBtn) {
-                activeBtn.classList.remove('text-slate-400');
-                activeBtn.classList.add('text-rose-600');
+                activeBtn.classList.remove('text-slate-400', 'dark:text-slate-500');
+                activeBtn.classList.add('text-rose-600', 'dark:text-rose-400');
             }
         };
 
@@ -464,11 +508,11 @@
             const btnMonth = document.getElementById('view-btn-month');
             const btnList = document.getElementById('view-btn-list');
             if (view === 'month') {
-                btnMonth.className = "px-3 py-1.5 text-xs font-bold rounded-lg bg-white text-slate-800 shadow-xs transition cursor-pointer";
-                btnList.className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 transition cursor-pointer";
+                btnMonth.className = "px-3 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-xs transition cursor-pointer";
+                btnList.className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 dark:text-slate-300 transition cursor-pointer";
             } else {
-                btnList.className = "px-3 py-1.5 text-xs font-bold rounded-lg bg-white text-slate-800 shadow-xs transition cursor-pointer";
-                btnMonth.className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 transition cursor-pointer";
+                btnList.className = "px-3 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-xs transition cursor-pointer";
+                btnMonth.className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 dark:text-slate-300 transition cursor-pointer";
             }
             renderCalendar();
         };
@@ -484,7 +528,7 @@
         };
 
         window.openModalForDate = function(dateStr) {
-            document.getElementById('cal-date').value = dateStr || selectedDayStr || new Date().toISOString().split('T')[0];
+            document.getElementById('cal-date').value = dateStr || selectedDayStr || getLocalDateString();
             openModal('calendar-modal');
         };
 
@@ -501,6 +545,11 @@
             if (!date) { alert('Bitte ein Datum wählen.'); return; }
 
             data.calendar.push({ id: Date.now(), title, date, time, category, color, recurrence, desc });
+            
+            selectedDayStr = date;
+            const parts = date.split('-');
+            currentCalendarDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+
             saveData();
             closeModal('calendar-modal');
             
@@ -594,7 +643,7 @@
                     const targetEnd = new Date(year, month + 1, daysInMonth);
                     while (d <= targetEnd) {
                         if (d >= targetStart && d <= targetEnd) {
-                            events.push({ ...item, computedDate: d.toISOString().split('T')[0] });
+                            events.push({ ...item, computedDate: getLocalDateString(d) });
                         }
                         d.setDate(d.getDate() + 7);
                     }
@@ -623,7 +672,7 @@
             monthTitleEl.textContent = `${monthNames[month]} ${year}`;
 
             const monthEvents = getEventsForMonth(year, month);
-            const todayStr = new Date().toISOString().split('T')[0];
+            const todayStr = getLocalDateString();
 
             // 1. MONATS-GRID RENDERN
             if (calendarViewMode === 'month') {
@@ -632,7 +681,7 @@
                 const daysInMonth = new Date(year, month + 1, 0).getDate();
 
                 let gridHtml = `
-                    <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
+                    <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1">
                         <div>Mo</div><div>Di</div><div>Mi</div><div>Do</div><div>Fr</div><div>Sa</div><div>So</div>
                     </div>
                     <div class="grid grid-cols-7 gap-1">
@@ -649,11 +698,11 @@
                     const dayEvents = monthEvents.filter(e => e.computedDate === dateStr);
 
                     let ringStyle = '';
-                    if (isSelected) ringStyle = 'ring-2 ring-rose-600 font-bold bg-rose-50/50';
+                    if (isSelected) ringStyle = 'ring-2 ring-rose-600 font-bold bg-rose-50/50 dark:bg-rose-950/40';
 
                     gridHtml += `
-                        <div onclick="selectDay('${dateStr}')" class="h-11 rounded-xl border border-slate-200/80 bg-white flex flex-col items-center justify-between py-1 cursor-pointer hover:border-rose-400 transition relative ${isToday ? 'border-rose-500 font-bold' : ''} ${ringStyle}">
-                            <span class="text-xs ${isToday ? 'text-rose-600 font-bold' : 'text-slate-700'}">${day}</span>
+                        <div onclick="selectDay('${dateStr}')" class="h-11 rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800 flex flex-col items-center justify-between py-1 cursor-pointer hover:border-rose-400 transition relative ${isToday ? 'border-rose-500 font-bold' : ''} ${ringStyle}">
+                            <span class="text-xs ${isToday ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-700 dark:text-slate-200'}">${day}</span>
                             <div class="flex space-x-0.5 px-1 pb-0.5 overflow-hidden w-full justify-center">
                                 ${dayEvents.slice(0, 3).map(e => `<span style="background-color: ${e.color || '#e11d48'};" class="w-1.5 h-1.5 rounded-full"></span>`).join('')}
                             </div>
@@ -663,48 +712,39 @@
                 gridHtml += `</div>`;
                 gridContainer.innerHTML = gridHtml;
 
-                // 2. TAGES-DETAILANSICHT FÜR DEN AUSGEWÄHLTEN TAG RENDERN
-                const dayEvents = monthEvents.filter(e => e.computedDate === selectedDayStr);
-                
-                let dayHeaderFormatted = selectedDayStr;
-                try {
-                    const parts = selectedDayStr.split('-');
-                    dayHeaderFormatted = `${parts[2]}.${parts[1]}.${parts[0]}`;
-                } catch(e) {}
-
-                let dayHtml = `
-                    <div class="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 shadow-sm">
-                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                // 2. ALLE TERMINE DES MONATS ANZEIGEN
+                let listHtml = `
+                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3 shadow-sm">
+                        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                             <div>
-                                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Termine am</h4>
-                                <span class="font-bold text-slate-900 text-sm"><i class="fa-regular fa-calendar-days mr-1.5 text-rose-600"></i>${dayHeaderFormatted}</span>
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">Termine im Monat</h4>
+                                <span class="font-bold text-slate-900 dark:text-white text-sm"><i class="fa-regular fa-calendar-days mr-1.5 text-rose-600"></i>${monthNames[month]} ${year}</span>
                             </div>
-                            <button onclick="openModalForDate('${selectedDayStr}')" class="bg-rose-50 text-rose-600 hover:bg-rose-100 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer">
-                                <i class="fa-solid fa-plus mr-1"></i> Für diesen Tag
+                            <button onclick="openModalForDate('${selectedDayStr}')" class="bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer">
+                                <i class="fa-solid fa-plus mr-1"></i> Termin
                             </button>
                         </div>
                 `;
 
-                if (dayEvents.length === 0) {
-                    dayHtml += `<div class="text-center py-6 text-slate-400 text-xs italic">Keine Termine an diesem Tag.</div>`;
+                if (monthEvents.length === 0) {
+                    listHtml += `<div class="text-center py-6 text-slate-400 dark:text-slate-500 text-xs italic">Keine Termine in diesem Monat.</div>`;
                 } else {
-                    dayHtml += `<div class="space-y-2.5 pt-1">` + dayEvents.map(item => {
+                    listHtml += `<div class="space-y-2.5 pt-1">` + monthEvents.map(item => {
                         const color = item.color || '#e11d48';
                         const paleBg = hexToRgba(color, 0.12);
-                        const recurrenceText = item.recurrence === 'weekly' ? '🔁 Wöchentlich' : item.recurrence === 'monthly' ? '🔁 Monatlich' : item.recurrence === 'yearly' ? '🔁 Jährlich' : '';
 
                         return `
                             <div style="background-color: ${paleBg}; border-color: ${color};" class="border-2 rounded-2xl p-3.5 shadow-xs flex items-center justify-between space-x-3 transition">
                                 <div class="space-y-1 flex-1">
                                     <div class="flex items-center space-x-2">
                                         <span style="background-color: ${color};" class="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full shadow-xs">${item.category || 'Termin'}</span>
-                                        ${recurrenceText ? `<span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/70 text-slate-600">${recurrenceText}</span>` : ''}
+                                        <span class="text-[10px] font-bold text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md"><i class="fa-regular fa-calendar mr-1"></i>${item.computedDate}</span>
                                     </div>
-                                    <h5 class="font-bold text-slate-900 text-sm">${item.title}</h5>
-                                    <div class="flex items-center space-x-3 text-xs text-slate-700 font-medium">
+                                    <h5 class="font-bold text-slate-900 dark:text-white text-sm">${item.title}</h5>
+                                    <div class="flex items-center space-x-3 text-xs text-slate-700 dark:text-slate-300 font-medium">
                                         ${item.time ? `<span><i class="fa-regular fa-clock mr-1" style="color: ${color};"></i>${item.time} Uhr</span>` : ''}
                                     </div>
-                                    ${item.desc ? `<p class="text-xs text-slate-600 italic pt-0.5"><i class="fa-regular fa-note-sticky mr-1"></i>${item.desc}</p>` : ''}
+                                    ${item.desc ? `<p class="text-xs text-slate-600 dark:text-slate-300 italic pt-0.5"><i class="fa-regular fa-note-sticky mr-1"></i>${item.desc}</p>` : ''}
                                 </div>
                                 <button onclick="deleteCalendar(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer transition"><i class="fa-solid fa-trash-can text-sm"></i></button>
                             </div>
@@ -712,15 +752,15 @@
                     }).join('') + `</div>`;
                 }
 
-                dayHtml += `</div>`;
-                container.innerHTML = dayHtml;
+                listHtml += `</div>`;
+                container.innerHTML = listHtml;
 
             } else {
                 // AGENDA- / LISTENANSICHT
                 gridContainer.classList.add('hidden');
 
                 if (monthEvents.length === 0) { 
-                    container.innerHTML = `<div class="text-center py-12 text-slate-400 text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">Keine Termine im ${monthNames[month]}.</div>`; 
+                    container.innerHTML = `<div class="text-center py-12 text-slate-400 dark:text-slate-500 text-sm bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">Keine Termine im ${monthNames[month]}.</div>`; 
                     return; 
                 }
 
@@ -728,7 +768,6 @@
                     const color = item.color || '#e11d48';
                     const paleBg = hexToRgba(color, 0.12);
                     const isToday = (item.computedDate === todayStr);
-                    const recurrenceText = item.recurrence === 'weekly' ? '🔁 Wöchentlich' : item.recurrence === 'monthly' ? '🔁 Monatlich' : item.recurrence === 'yearly' ? '🔁 Jährlich' : '';
 
                     return `
                         <div style="background-color: ${paleBg}; border-color: ${color};" class="border-2 rounded-2xl p-4 shadow-sm flex items-center justify-between space-x-3 transition">
@@ -736,14 +775,13 @@
                                 <div class="flex items-center space-x-2">
                                     <span style="background-color: ${color};" class="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full shadow-xs">${item.category || 'Termin'}</span>
                                     ${isToday ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white animate-pulse shadow-xs">Heute</span>' : ''}
-                                    ${recurrenceText ? `<span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/70 text-slate-600">${recurrenceText}</span>` : ''}
                                 </div>
-                                <h4 class="font-bold text-slate-900 text-sm">${item.title}</h4>
-                                <div class="flex items-center space-x-3 text-xs text-slate-700 font-medium">
+                                <h4 class="font-bold text-slate-900 dark:text-white text-sm">${item.title}</h4>
+                                <div class="flex items-center space-x-3 text-xs text-slate-700 dark:text-slate-300 font-medium">
                                     <span><i class="fa-regular fa-calendar mr-1" style="color: ${color};"></i>${item.computedDate}</span>
                                     ${item.time ? `<span><i class="fa-regular fa-clock mr-1" style="color: ${color};"></i>${item.time} Uhr</span>` : ''}
                                 </div>
-                                ${item.desc ? `<p class="text-xs text-slate-600 italic pt-0.5"><i class="fa-regular fa-note-sticky mr-1"></i>${item.desc}</p>` : ''}
+                                ${item.desc ? `<p class="text-xs text-slate-600 dark:text-slate-300 italic pt-0.5"><i class="fa-regular fa-note-sticky mr-1"></i>${item.desc}</p>` : ''}
                             </div>
                             <button onclick="deleteCalendar(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer transition"><i class="fa-solid fa-trash-can text-sm"></i></button>
                         </div>
@@ -756,16 +794,16 @@
             const container = document.getElementById('task-list');
             if (!container) return;
             if (!data.tasks || data.tasks.length === 0) { 
-                container.innerHTML = `<div class="text-center py-12 text-slate-400 text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">Keine Aufgaben vorhanden.</div>`; 
+                container.innerHTML = `<div class="text-center py-12 text-slate-400 dark:text-slate-500 text-sm bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">Keine Aufgaben vorhanden.</div>`; 
                 return; 
             }
             container.innerHTML = data.tasks.map(item => `
-                <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+                <div class="bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 rounded-2xl p-4 shadow-sm flex items-center justify-between">
                     <div class="flex items-center space-x-3 flex-1">
-                        <input type="checkbox" ${item.completed ? 'checked' : ''} onclick="toggleTask(${item.id})" class="w-5 h-5 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer">
+                        <input type="checkbox" ${item.completed ? 'checked' : ''} onclick="toggleTask(${item.id})" class="w-5 h-5 rounded border-slate-300 dark:border-slate-600 text-rose-600 focus:ring-rose-500 cursor-pointer">
                         <div class="space-y-0.5 flex-1">
-                            <h4 class="font-semibold text-sm ${item.completed ? 'line-through text-slate-400' : 'text-slate-800'}">${item.title}</h4>
-                            <div class="flex items-center space-x-3 text-xs text-slate-500">
+                            <h4 class="font-semibold text-sm ${item.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}">${item.title}</h4>
+                            <div class="flex items-center space-x-3 text-xs text-slate-500 dark:text-slate-400">
                                 ${item.assignee ? `<span><i class="fa-regular fa-user mr-1"></i>${item.assignee}</span>` : ''}
                                 ${item.due ? `<span><i class="fa-regular fa-clock mr-1"></i>Frist: ${item.due}</span>` : ''}
                             </div>
@@ -783,12 +821,12 @@
                 const items = (data.inventory || []).filter(i => i.category === cat);
                 return `
                     <div class="space-y-2">
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 px-1">${cat}</h4>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 px-1">${cat}</h4>
                         <div class="space-y-2">
-                            ${items.length === 0 ? `<div class="text-xs text-slate-400 italic px-1 bg-slate-50 p-2 rounded-xl">Keine Einträge</div>` : 
+                            ${items.length === 0 ? `<div class="text-xs text-slate-400 dark:text-slate-500 italic px-1 bg-slate-50 dark:bg-slate-800/40 p-2 rounded-xl">Keine Einträge</div>` : 
                                 items.map(item => `
-                                    <div class="bg-slate-50 border border-slate-100 rounded-2xl p-3.5 shadow-sm flex items-center justify-between">
-                                        <span class="font-medium text-sm text-slate-800">${item.title}</span>
+                                    <div class="bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 rounded-2xl p-3.5 shadow-sm flex items-center justify-between">
+                                        <span class="font-medium text-sm text-slate-800 dark:text-slate-200">${item.title}</span>
                                         <div class="flex items-center space-x-1">
                                             <button onclick="addToShoppingFromInventory('${item.title.replace(/'/g, "\\'")}')" title="Auf Einkaufsliste setzen" class="text-slate-400 hover:text-emerald-600 p-2 cursor-pointer"><i class="fa-solid fa-cart-plus text-sm"></i></button>
                                             <button onclick="deleteInventory(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer"><i class="fa-solid fa-trash-can text-sm"></i></button>
@@ -805,14 +843,14 @@
             const container = document.getElementById('shopping-list');
             if (!container) return;
             if (!data.shopping || data.shopping.length === 0) { 
-                container.innerHTML = `<div class="text-center py-12 text-slate-400 text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">Einkaufsliste ist leer.</div>`; 
+                container.innerHTML = `<div class="text-center py-12 text-slate-400 dark:text-slate-500 text-sm bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">Einkaufsliste ist leer.</div>`; 
                 return; 
             }
             container.innerHTML = data.shopping.map(item => `
-                <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+                <div class="bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 rounded-2xl p-4 shadow-sm flex items-center justify-between">
                     <div class="flex items-center space-x-3 flex-1">
-                        <input type="checkbox" ${item.completed ? 'checked' : ''} onclick="toggleShopping(${item.id})" class="w-5 h-5 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer">
-                        <span class="font-medium text-sm ${item.completed ? 'line-through text-slate-400' : 'text-slate-800'}">${item.title}</span>
+                        <input type="checkbox" ${item.completed ? 'checked' : ''} onclick="toggleShopping(${item.id})" class="w-5 h-5 rounded border-slate-300 dark:border-slate-600 text-rose-600 focus:ring-rose-500 cursor-pointer">
+                        <span class="font-medium text-sm ${item.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}">${item.title}</span>
                     </div>
                     <button onclick="deleteShopping(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer"><i class="fa-solid fa-trash-can text-sm"></i></button>
                 </div>
