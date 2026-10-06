@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Haushalts-Manager</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- MQTT-Bibliothek für Echtzeit-Verbindung -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col select-none">
+
+    <!-- 1. LOGIN SCREEN -->
+    <div id="login-screen" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 space-y-6">
+            <div class="text-center space-y-2">
+                <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl mx-auto flex items-center justify-center text-2xl shadow-inner">
+                    <i class="fa-solid fa-house-heart"></i>
+                </div>
+                <h1 class="text-2xl font-bold tracking-tight text-slate-900">Haushalts-Manager</h1>
+                <p class="text-sm text-slate-500">Tippt denselben Namen ein, um euch zu verbinden.</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Gemeinsamer Haushalts-Name</label>
+                    <input type="text" id="household-input" placeholder="z.B. unser-zuhause" 
+                        class="w-full px-4 py-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm bg-slate-50">
+                </div>
+                <button type="button" onclick="handleLogin()" class="w-full py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl shadow-lg shadow-rose-600/35 transition-all cursor-pointer">
+                    Haushalt öffnen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. HAUPT-APP CONTAINER -->
+    <div id="app-screen" class="hidden flex-1 flex flex-col max-w-md w-full mx-auto bg-white shadow-2xl min-h-screen sm:min-h-0 sm:my-6 sm:rounded-3xl overflow-hidden relative">
+        
+        <!-- Header -->
+        <header class="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
+            <div>
+                <span id="sync-status" class="text-[10px] font-bold text-amber-500 uppercase tracking-widest"><i class="fa-solid fa-circle-notch fa-spin"></i> Verbinde...</span>
+                <h2 id="display-household" class="text-base font-bold text-slate-900"></h2>
+            </div>
+            <button onclick="handleLogout()" class="text-xs font-medium text-slate-500 hover:text-rose-600 px-3 py-1.5 rounded-lg border border-slate-200 transition-all cursor-pointer">
+                <i class="fa-solid fa-right-from-bracket mr-1"></i> Wechseln
+            </button>
+        </header>
+
+        <!-- Hauptinhalt (Tabs) -->
+        <main class="flex-1 pb-28 overflow-y-auto">
+            
+            <!-- TAB 1: KALENDER -->
+            <section id="tab-calendar" class="tab-content p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-slate-900">Gemeinsamer Kalender</h3>
+                    <button onclick="openModal('calendar-modal')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
+                        <i class="fa-solid fa-plus mr-1"></i> Termin
+                    </button>
+                </div>
+                <div id="calendar-list" class="space-y-3"></div>
+            </section>
+
+            <!-- TAB 2: AUFGABEN -->
+            <section id="tab-tasks" class="tab-content hidden p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-slate-900">Aufgaben & Fristen</h3>
+                    <button onclick="openModal('task-modal')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
+                        <i class="fa-solid fa-plus mr-1"></i> Aufgabe
+                    </button>
+                </div>
+                <div id="task-list" class="space-y-3"></div>
+            </section>
+
+            <!-- TAB 3: VORRAT -->
+            <section id="tab-inventory" class="tab-content hidden p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-slate-900">Vorrat nach Themen</h3>
+                    <button onclick="openModal('inventory-modal')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
+                        <i class="fa-solid fa-plus mr-1"></i> Vorrat
+                    </button>
+                </div>
+                <div id="inventory-container" class="space-y-6"></div>
+            </section>
+
+            <!-- TAB 4: EINKAUFSLISTE -->
+            <section id="tab-shopping" class="tab-content hidden p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-slate-900">Einkaufsliste</h3>
+                    <button onclick="openModal('shopping-modal')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
+                        <i class="fa-solid fa-plus mr-1"></i> Artikel
+                    </button>
+                </div>
+                <div id="shopping-list" class="space-y-3"></div>
+            </section>
+
+        </main>
+
+        <!-- Untere Navigation -->
+        <nav class="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-4 py-2.5 flex justify-around items-center z-20 shadow-lg">
+            <button onclick="switchTab('calendar')" class="nav-btn flex flex-col items-center text-rose-600 cursor-pointer p-1" data-tab="calendar">
+                <i class="fa-solid fa-calendar-days text-lg"></i>
+                <span class="text-[10px] font-semibold mt-1">Kalender</span>
+            </button>
+            <button onclick="switchTab('tasks')" class="nav-btn flex flex-col items-center text-slate-400 hover:text-slate-600 cursor-pointer p-1" data-tab="tasks">
+                <i class="fa-solid fa-list-check text-lg"></i>
+                <span class="text-[10px] font-semibold mt-1">Aufgaben</span>
+            </button>
+            <button onclick="switchTab('inventory')" class="nav-btn flex flex-col items-center text-slate-400 hover:text-slate-600 cursor-pointer p-1" data-tab="inventory">
+                <i class="fa-solid fa-boxes-stacked text-lg"></i>
+                <span class="text-[10px] font-semibold mt-1">Vorrat</span>
+            </button>
+            <button onclick="switchTab('shopping')" class="nav-btn flex flex-col items-center text-slate-400 hover:text-slate-600 cursor-pointer p-1" data-tab="shopping">
+                <i class="fa-solid fa-cart-shopping text-lg"></i>
+                <span class="text-[10px] font-semibold mt-1">Einkauf</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- MODALS -->
+    <div id="calendar-modal" class="modal hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <h3 class="text-base font-bold text-slate-900">Neuen Termin hinzufügen</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Titel</label>
+                    <input type="text" id="cal-title" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Datum</label>
+                        <input type="date" id="cal-date" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Uhrzeit</label>
+                        <input type="time" id="cal-time" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                    </div>
+                </div>
+                <div class="flex space-x-3 pt-2">
+                    <button onclick="closeModal('calendar-modal')" class="flex-1 py-2.5 bg-slate-100 text-slate-600 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
+                    <button onclick="saveCalendar()" class="flex-1 py-2.5 bg-rose-600 text-white font-semibold rounded-xl text-sm shadow-md cursor-pointer">Speichern</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="task-modal" class="modal hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <h3 class="text-base font-bold text-slate-900">Neue Aufgabe hinzufügen</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Aufgabe</label>
+                    <input type="text" id="task-title" placeholder="z.B. Müll rausbringen" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Wer?</label>
+                        <input type="text" id="task-assignee" placeholder="Name" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Frist</label>
+                        <input type="date" id="task-due" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                    </div>
+                </div>
+                <div class="flex space-x-3 pt-2">
+                    <button onclick="closeModal('task-modal')" class="flex-1 py-2.5 bg-slate-100 text-slate-600 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
+                    <button onclick="saveTask()" class="flex-1 py-2.5 bg-rose-600 text-white font-semibold rounded-xl text-sm shadow-md cursor-pointer">Speichern</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="inventory-modal" class="modal hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <h3 class="text-base font-bold text-slate-900">Vorrat hinzufügen</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Artikel</label>
+                    <input type="text" id="inv-title" placeholder="z.B. Olivenöl" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Kategorie</label>
+                    <select id="inv-category" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                        <option value="Vorratskammer">Vorratskammer</option>
+                        <option value="Kühlschrank & Tiefkühler">Kühlschrank & Tiefkühler</option>
+                        <option value="Bad & Drogerie">Bad & Drogerie</option>
+                        <option value="Haushalt & Sonstiges">Haushalt & Sonstiges</option>
+                    </select>
+                </div>
+                <div class="flex space-x-3 pt-2">
+                    <button onclick="closeModal('inventory-modal')" class="flex-1 py-2.5 bg-slate-100 text-slate-600 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
+                    <button onclick="saveInventory()" class="flex-1 py-2.5 bg-rose-600 text-white font-semibold rounded-xl text-sm shadow-md cursor-pointer">Speichern</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="shopping-modal" class="modal hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <h3 class="text-base font-bold text-slate-900">Artikel einkaufen</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Artikel</label>
+                    <input type="text" id="shop-title" placeholder="z.B. Milch" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50">
+                </div>
+                <div class="flex space-x-3 pt-2">
+                    <button onclick="closeModal('shopping-modal')" class="flex-1 py-2.5 bg-slate-100 text-slate-600 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
+                    <button onclick="saveShopping()" class="flex-1 py-2.5 bg-rose-600 text-white font-semibold rounded-xl text-sm shadow-md cursor-pointer">Speichern</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ECHTZEIT MQTT SYNCHRONISATIONS-LOGIK -->
+    <script>
+        const memoryFallback = {};
+        const safeStorage = {
+            getItem(key) {
+                try { return localStorage.getItem(key) || memoryFallback[key] || null; }
+                catch(e) { return memoryFallback[key] || null; }
+            },
+            setItem(key, val) {
+                memoryFallback[key] = val;
+                try { localStorage.setItem(key, val); } catch(e) {}
+            },
+            removeItem(key) {
+                delete memoryFallback[key];
+                try { localStorage.removeItem(key); } catch(e) {}
+            }
+        };
+
+        let currentHousehold = safeStorage.getItem('household_code') || '';
+        let data = { calendar: [], tasks: [], inventory: [], shopping: [] };
+        const categories = ['Vorratskammer', 'Kühlschrank & Tiefkühler', 'Bad & Drogerie', 'Haushalt & Sonstiges'];
+        let mqttClient = null;
+
+        function getStorageKey() {
+            return 'household_data_' + (currentHousehold ? currentHousehold.trim().toLowerCase() : 'default');
+        }
+
+        function loadLocalData() {
+            try {
+                const saved = safeStorage.getItem(getStorageKey());
+                if (saved) {
+                    data = JSON.parse(saved);
+                } else {
+                    data = { calendar: [], tasks: [], inventory: [], shopping: [] };
+                }
+            } catch (e) {
+                data = { calendar: [], tasks: [], inventory: [], shopping: [] };
+            }
+            renderAll();
+        }
+
+        function saveData() {
+            try {
+                safeStorage.setItem(getStorageKey(), JSON.stringify(data));
+            } catch(e) {}
+            renderAll();
+
+            // Live an Partner senden mit retain: true (damit der Server den letzten Stand dauerhaft speichert)
+            if (mqttClient && mqttClient.connected && currentHousehold) {
+                const topic = 'haushalt_sync_2026_' + currentHousehold.trim().toLowerCase();
+                mqttClient.publish(topic, JSON.stringify(data), { retain: true });
+            }
+        }
+
+        function initMQTT() {
+            if (!currentHousehold) return;
+
+            const statusEl = document.getElementById('sync-status');
+            if (statusEl) statusEl.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verbinde Live...';
+
+            mqttClient = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
+            const topic = 'haushalt_sync_2026_' + currentHousehold.trim().toLowerCase();
+
+            mqttClient.on('connect', () => {
+                if (statusEl) statusEl.innerHTML = '<i class="fa-solid fa-cloud text-emerald-600"></i> Live Sync aktiv';
+                mqttClient.subscribe(topic);
+            });
+
+            mqttClient.on('message', (incomingTopic, payload) => {
+                if (incomingTopic === topic) {
+                    try {
+                        const remoteData = JSON.parse(payload.toString());
+                        if (remoteData && remoteData.calendar) {
+                            data = remoteData;
+                            safeStorage.setItem(getStorageKey(), JSON.stringify(data));
+                            renderAll();
+                        }
+                    } catch(e) {}
+                }
+            });
+
+            mqttClient.on('error', () => {
+                if (statusEl) statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-amber-600"></i> Lokal (Offline)';
+            });
+        }
+
+        function init() {
+            currentHousehold = safeStorage.getItem('household_code') || '';
+            const loginScreen = document.getElementById('login-screen');
+            const appScreen = document.getElementById('app-screen');
+            
+            if (currentHousehold) {
+                if (loginScreen) loginScreen.classList.add('hidden');
+                if (appScreen) appScreen.classList.remove('hidden');
+                const display = document.getElementById('display-household');
+                if (display) display.textContent = currentHousehold;
+                
+                loadLocalData();
+                initMQTT();
+            } else {
+                if (loginScreen) loginScreen.classList.remove('hidden');
+                if (appScreen) appScreen.classList.add('hidden');
+                if (mqttClient) mqttClient.end();
+            }
+        }
+
+        window.handleLogin = function() {
+            const input = document.getElementById('household-input');
+            const code = input ? input.value.trim() : '';
+            if (code) {
+                currentHousehold = code;
+                safeStorage.setItem('household_code', code);
+                init();
+            } else {
+                alert('Bitte gib einen Haushalts-Namen ein.');
+            }
+        };
+
+        window.handleLogout = function() {
+            if (mqttClient) mqttClient.end();
+            safeStorage.removeItem('household_code');
+            currentHousehold = '';
+            init();
+        };
+
+        window.switchTab = function(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                b.classList.remove('text-rose-600');
+                b.classList.add('text-slate-400');
+            });
+            const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-400');
+                activeBtn.classList.add('text-rose-600');
+            }
+        };
+
+        window.openModal = function(id) { document.getElementById(id).classList.remove('hidden'); };
+        window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); };
+
+        window.saveCalendar = function() {
+            const title = document.getElementById('cal-title').value.trim();
+            const date = document.getElementById('cal-date').value;
+            const time = document.getElementById('cal-time').value;
+            if (!title) { alert('Bitte einen Titel eingeben.'); return; }
+            data.calendar.push({ id: Date.now(), title, date, time });
+            saveData();
+            closeModal('calendar-modal');
+            document.getElementById('cal-title').value = '';
+            document.getElementById('cal-date').value = '';
+            document.getElementById('cal-time').value = '';
+        };
+
+        window.saveTask = function() {
+            const title = document.getElementById('task-title').value.trim();
+            const assignee = document.getElementById('task-assignee').value.trim();
+            const due = document.getElementById('task-due').value;
+            if (!title) { alert('Bitte eine Aufgabe eingeben.'); return; }
+            data.tasks.push({ id: Date.now(), title, assignee, due, completed: false });
+            saveData();
+            closeModal('task-modal');
+            document.getElementById('task-title').value = '';
+            document.getElementById('task-assignee').value = '';
+            document.getElementById('task-due').value = '';
+        };
+
+        window.saveInventory = function() {
+            const title = document.getElementById('inv-title').value.trim();
+            const category = document.getElementById('inv-category').value;
+            if (!title) { alert('Bitte einen Artikel eingeben.'); return; }
+            data.inventory.push({ id: Date.now(), title, category });
+            saveData();
+            closeModal('inventory-modal');
+            document.getElementById('inv-title').value = '';
+        };
+
+        window.saveShopping = function() {
+            const title = document.getElementById('shop-title').value.trim();
+            if (!title) { alert('Bitte einen Artikel eingeben.'); return; }
+            data.shopping.push({ id: Date.now(), title, completed: false });
+            saveData();
+            closeModal('shopping-modal');
+            document.getElementById('shop-title').value = '';
+        };
+
+        window.toggleTask = function(id) {
+            const task = data.tasks.find(t => t.id === id);
+            if (task) { task.completed = !task.completed; saveData(); }
+        };
+
+        window.deleteTask = function(id) { data.tasks = data.tasks.filter(t => t.id !== id); saveData(); };
+        window.deleteCalendar = function(id) { data.calendar = data.calendar.filter(c => c.id !== id); saveData(); };
+        window.deleteInventory = function(id) { data.inventory = data.inventory.filter(i => i.id !== id); saveData(); };
+        window.deleteShopping = function(id) { data.shopping = data.shopping.filter(s => s.id !== id); saveData(); };
+
+        window.toggleShopping = function(id) {
+            const item = data.shopping.find(s => s.id === id);
+            if (item) { item.completed = !item.completed; saveData(); }
+        };
+
+        window.addToShoppingFromInventory = function(title) {
+            data.shopping.push({ id: Date.now(), title: title, completed: false });
+            saveData();
+            alert('"' + title + '" wurde zur Einkaufsliste hinzugefügt!');
+        };
+
+        function renderAll() { renderCalendar(); renderTasks(); renderInventory(); renderShopping(); }
+
+        function renderCalendar() {
+            const container = document.getElementById('calendar-list');
+            if (!container) return;
+            if (!data.calendar || data.calendar.length === 0) { 
+                container.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm">Keine Termine vorhanden.</div>`; 
+                return; 
+            }
+            container.innerHTML = data.calendar.map(item => `
+                <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+                    <div class="space-y-1">
+                        <h4 class="font-semibold text-slate-800 text-sm">${item.title}</h4>
+                        <div class="flex items-center space-x-3 text-xs text-slate-500">
+                            <span><i class="fa-regular fa-calendar mr-1"></i>${item.date || 'Kein Datum'}</span>
+                            ${item.time ? `<span><i class="fa-regular fa-clock mr-1"></i>${item.time}</span>` : ''}
+                        </div>
+                    </div>
+                    <button onclick="deleteCalendar(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('task-list');
+            if (!container) return;
+            if (!data.tasks || data.tasks.length === 0) { 
+                container.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm">Keine Aufgaben vorhanden.</div>`; 
+                return; 
+            }
+            container.innerHTML = data.tasks.map(item => `
+                <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+                    <div class="flex items-center space-x-3 flex-1">
+                        <input type="checkbox" ${item.completed ? 'checked' : ''} onclick="toggleTask(${item.id})" class="w-5 h-5 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer">
+                        <div class="space-y-0.5 flex-1">
+                            <h4 class="font-semibold text-sm ${item.completed ? 'line-through text-slate-400' : 'text-slate-800'}">${item.title}</h4>
+                            <div class="flex items-center space-x-3 text-xs text-slate-500">
+                                ${item.assignee ? `<span><i class="fa-regular fa-user mr-1"></i>${item.assignee}</span>` : ''}
+                                ${item.due ? `<span><i class="fa-regular fa-clock mr-1"></i>Frist: ${item.due}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="deleteTask(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function renderInventory() {
+            const container = document.getElementById('inventory-container');
+            if (!container) return;
+            container.innerHTML = categories.map(cat => {
+                const items = (data.inventory || []).filter(i => i.category === cat);
+                return `
+                    <div class="space-y-2">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 px-1">${cat}</h4>
+                        <div class="space-y-2">
+                            ${items.length === 0 ? `<div class="text-xs text-slate-400 italic px-1 bg-slate-50 p-2 rounded-xl">Keine Einträge</div>` : 
+                                items.map(item => `
+                                    <div class="bg-slate-50 border border-slate-100 rounded-2xl p-3.5 shadow-sm flex items-center justify-between">
+                                        <span class="font-medium text-sm text-slate-800">${item.title}</span>
+                                        <div class="flex items-center space-x-1">
+                                            <button onclick="addToShoppingFromInventory('${item.title.replace(/'/g, "\\'")}')" title="Auf Einkaufsliste setzen" class="text-slate-400 hover:text-emerald-600 p-2 cursor-pointer"><i class="fa-solid fa-cart-plus text-sm"></i></button>
+                                            <button onclick="deleteInventory(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderShopping() {
+            const container = document.getElementById('shopping-list');
+            if (!container) return;
+            if (!data.shopping || data.shopping.length === 0) { 
+                container.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm">Einkaufsliste ist leer.</div>`; 
+                return; 
+            }
+            container.innerHTML = data.shopping.map(item => `
+                <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+                    <div class="flex items-center space-x-3 flex-1">
+                        <input type="checkbox" ${item.completed ? 'checked' : ''} onclick="toggleShopping(${item.id})" class="w-5 h-5 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer">
+                        <span class="font-medium text-sm ${item.completed ? 'line-through text-slate-400' : 'text-slate-800'}">${item.title}</span>
+                    </div>
+                    <button onclick="deleteShopping(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                </div>
+            `).join('');
+        }
+
+        // Start beim Laden
+        init();
+    </script>
+</body>
+</html>
