@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Haushalts-Manager</title>
     
+    <link rel="manifest" href="manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- MQTT-Bibliothek für Echtzeit-Verbindung -->
@@ -214,8 +215,13 @@
         </div>
     </div>
 
-    <!-- ECHTZEIT MQTT SYNCHRONISATIONS-LOGIK -->
+    <!-- ECHTZEIT MQTT SYNCHRONISATIONS-LOGIK & PWA -->
     <script>
+        // Service Worker registrieren für PWA-Installation
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(() => {});
+        }
+
         const memoryFallback = {};
         const safeStorage = {
             getItem(key) {
@@ -261,7 +267,7 @@
             } catch(e) {}
             renderAll();
 
-            // Live an Partner senden mit retain: true (damit der Server den letzten Stand dauerhaft speichert)
+            // Live an Partner senden mit retain: true
             if (mqttClient && mqttClient.connected && currentHousehold) {
                 const topic = 'haushalt_sync_2026_' + currentHousehold.trim().toLowerCase();
                 mqttClient.publish(topic, JSON.stringify(data), { retain: true });
