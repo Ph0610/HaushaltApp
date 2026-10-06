@@ -66,7 +66,7 @@
                         <h3 class="text-lg font-bold text-slate-900">Gemeinsamer Kalender</h3>
                         <p class="text-xs text-slate-400">Monats- und Listenansicht</p>
                     </div>
-                    <button onclick="openModal('calendar-modal')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
+                    <button onclick="openModalForDate('')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
                         <i class="fa-solid fa-plus mr-1"></i> Termin
                     </button>
                 </div>
@@ -89,8 +89,8 @@
                     <div id="calendar-grid-container" class="space-y-2 pt-2"></div>
                 </div>
 
-                <!-- Termin-Liste für den Monat / Agenda -->
-                <div id="calendar-list" class="space-y-3"></div>
+                <!-- Tages-Detailansicht (im Monatsmodus) oder Agenda-Liste (im Listenmodus) -->
+                <div id="calendar-content-container" class="space-y-3"></div>
             </section>
 
             <!-- TAB 2: AUFGABEN -->
@@ -298,6 +298,7 @@
         // Kalender Ansichts-Zustand
         let currentCalendarDate = new Date();
         let calendarViewMode = 'month'; // 'month' oder 'list'
+        let selectedDayStr = new Date().toISOString().split('T')[0]; // Standardmäßig heute ausgewählt
 
         function getStorageKey() {
             return 'household_data_' + (currentHousehold ? currentHousehold.trim().toLowerCase() : 'default');
@@ -475,6 +476,16 @@
             renderCalendar();
         };
 
+        window.selectDay = function(dateStr) {
+            selectedDayStr = dateStr;
+            renderCalendar();
+        };
+
+        window.openModalForDate = function(dateStr) {
+            document.getElementById('cal-date').value = dateStr || selectedDayStr || new Date().toISOString().split('T')[0];
+            openModal('calendar-modal');
+        };
+
         window.saveCalendar = function() {
             const title = document.getElementById('cal-title').value.trim();
             const date = document.getElementById('cal-date').value;
@@ -492,7 +503,6 @@
             closeModal('calendar-modal');
             
             document.getElementById('cal-title').value = '';
-            document.getElementById('cal-date').value = '';
             document.getElementById('cal-time').value = '';
             document.getElementById('cal-desc').value = '';
         };
@@ -557,7 +567,6 @@
             return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
         }
 
-        // Prüfen, ob ein Termin in einen bestimmten Monat fällt (inkl. Wiederholungen)
         function getEventsForMonth(year, month) {
             const events = [];
             const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -578,7 +587,6 @@
                         events.push({ ...item, computedDate: `${year}-${String(month+1).padStart(2,'0')}-${String(itemDay).padStart(2,'0')}` });
                     }
                 } else if (item.recurrence === 'weekly') {
-                    // Wöchentliche Wiederholung durchgehen
                     let d = new Date(itemYear, itemMonth, itemDay);
                     const targetStart = new Date(year, month, 1);
                     const targetEnd = new Date(year, month + 1, daysInMonth);
@@ -589,7 +597,6 @@
                         d.setDate(d.getDate() + 7);
                     }
                 } else {
-                    // Einmalig
                     if (itemYear === year && itemMonth === month) {
                         events.push({ ...item, computedDate: item.date });
                     }
@@ -603,7 +610,7 @@
         function renderAll() { renderCalendar(); renderTasks(); renderInventory(); renderShopping(); }
 
         function renderCalendar() {
-            const container = document.getElementById('calendar-list');
+            const container = document.getElementById('calendar-content-container');
             const gridContainer = document.getElementById('calendar-grid-container');
             const monthTitleEl = document.getElementById('calendar-month-title');
             if (!container || !gridContainer) return;
@@ -619,7 +626,7 @@
             // 1. MONATS-GRID RENDERN
             if (calendarViewMode === 'month') {
                 gridContainer.classList.remove('hidden');
-                const firstDayIndex = (new Date(year, month, 1).getDay() + 6) % 7; // Montag = 0
+                const firstDayIndex = (new Date(year, month, 1).getDay() + 6) % 7;
                 const daysInMonth = new Date(year, month + 1, 0).getDate();
 
                 let gridHtml = `
@@ -636,10 +643,14 @@
                 for (let day = 1; day <= daysInMonth; day++) {
                     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
                     const isToday = (dateStr === todayStr);
+                    const isSelected = (dateStr === selectedDayStr);
                     const dayEvents = monthEvents.filter(e => e.computedDate === dateStr);
 
+                    let ringStyle = '';
+                    if (isSelected) ringStyle = 'ring-2 ring-rose-600 font-bold bg-rose-50/50';
+
                     gridHtml += `
-                        <div onclick="openModalForDate('${dateStr}')" class="h-11 rounded-xl border border-slate-200/80 bg-white flex flex-col items-center justify-between py-1 cursor-pointer hover:border-rose-500 transition relative ${isToday ? 'bg-rose-50 border-rose-500 font-bold' : ''}">
+                        <div onclick="selectDay('${dateStr}')" class="h-11 rounded-xl border border-slate-200/80 bg-white flex flex-col items-center justify-between py-1 cursor-pointer hover:border-rose-400 transition relative ${isToday ? 'border-rose-500 font-bold' : ''} ${ringStyle}">
                             <span class="text-xs ${isToday ? 'text-rose-600 font-bold' : 'text-slate-700'}">${day}</span>
                             <div class="flex space-x-0.5 px-1 pb-0.5 overflow-hidden w-full justify-center">
                                 ${dayEvents.slice(0, 3).map(e => `<span style="background-color: ${e.color || '#e11d48'};" class="w-1.5 h-1.5 rounded-full"></span>`).join('')}
@@ -649,47 +660,95 @@
                 }
                 gridHtml += `</div>`;
                 gridContainer.innerHTML = gridHtml;
-            } else {
-                gridContainer.classList.add('hidden');
-            }
 
-            // 2. LISTEN- / AGENDA-ANSICHT RENDERN
-            if (monthEvents.length === 0) { 
-                container.innerHTML = `<div class="text-center py-12 text-slate-400 text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">Keine Termine im ${monthNames[month]}.</div>`; 
-                return; 
-            }
+                // 2. TAGES-DETAILANSICHT FÜR DEN AUSGEWÄHLTEN TAG RENDERN
+                const dayEvents = monthEvents.filter(e => e.computedDate === selectedDayStr);
+                
+                let dayHeaderFormatted = selectedDayStr;
+                try {
+                    const parts = selectedDayStr.split('-');
+                    dayHeaderFormatted = `${parts[2]}.${parts[1]}.${parts[0]}`;
+                } catch(e) {}
 
-            container.innerHTML = monthEvents.map(item => {
-                const color = item.color || '#e11d48';
-                const paleBg = hexToRgba(color, 0.12);
-                const isToday = (item.computedDate === todayStr);
-                const recurrenceText = item.recurrence === 'weekly' ? '🔁 Wöchentlich' : item.recurrence === 'monthly' ? '🔁 Monatlich' : item.recurrence === 'yearly' ? '🔁 Jährlich' : '';
-
-                return `
-                    <div style="background-color: ${paleBg}; border-color: ${color};" class="border-2 rounded-2xl p-4 shadow-sm flex items-center justify-between space-x-3 transition">
-                        <div class="space-y-1.5 flex-1">
-                            <div class="flex items-center space-x-2">
-                                <span style="background-color: ${color};" class="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full shadow-xs">${item.category || 'Termin'}</span>
-                                ${isToday ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white animate-pulse shadow-xs">Heute</span>' : ''}
-                                ${recurrenceText ? `<span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/70 text-slate-600">${recurrenceText}</span>` : ''}
+                let dayHtml = `
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 shadow-sm">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <div>
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Termine am</h4>
+                                <span class="font-bold text-slate-900 text-sm"><i class="fa-regular fa-calendar-days mr-1.5 text-rose-600"></i>${dayHeaderFormatted}</span>
                             </div>
-                            <h4 class="font-bold text-slate-900 text-sm">${item.title}</h4>
-                            <div class="flex items-center space-x-3 text-xs text-slate-700 font-medium">
-                                <span><i class="fa-regular fa-calendar mr-1" style="color: ${color};"></i>${item.computedDate}</span>
-                                ${item.time ? `<span><i class="fa-regular fa-clock mr-1" style="color: ${color};"></i>${item.time} Uhr</span>` : ''}
-                            </div>
-                            ${item.desc ? `<p class="text-xs text-slate-600 italic pt-0.5"><i class="fa-regular fa-note-sticky mr-1"></i>${item.desc}</p>` : ''}
+                            <button onclick="openModalForDate('${selectedDayStr}')" class="bg-rose-50 text-rose-600 hover:bg-rose-100 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer">
+                                <i class="fa-solid fa-plus mr-1"></i> Für diesen Tag
+                            </button>
                         </div>
-                        <button onclick="deleteCalendar(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer transition"><i class="fa-solid fa-trash-can text-sm"></i></button>
-                    </div>
                 `;
-            }).join('');
-        }
 
-        window.openModalForDate = function(dateStr) {
-            document.getElementById('cal-date').value = dateStr;
-            openModal('calendar-modal');
-        };
+                if (dayEvents.length === 0) {
+                    dayHtml += `<div class="text-center py-6 text-slate-400 text-xs italic">Keine Termine an diesem Tag.</div>`;
+                } else {
+                    dayHtml += `<div class="space-y-2.5 pt-1">` + dayEvents.map(item => {
+                        const color = item.color || '#e11d48';
+                        const paleBg = hexToRgba(color, 0.12);
+                        const recurrenceText = item.recurrence === 'weekly' ? '🔁 Wöchentlich' : item.recurrence === 'monthly' ? '🔁 Monatlich' : item.recurrence === 'yearly' ? '🔁 Jährlich' : '';
+
+                        return `
+                            <div style="background-color: ${paleBg}; border-color: ${color};" class="border-2 rounded-2xl p-3.5 shadow-xs flex items-center justify-between space-x-3 transition">
+                                <div class="space-y-1 flex-1">
+                                    <div class="flex items-center space-x-2">
+                                        <span style="background-color: ${color};" class="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full shadow-xs">${item.category || 'Termin'}</span>
+                                        ${recurrenceText ? `<span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/70 text-slate-600">${recurrenceText}</span>` : ''}
+                                    </div>
+                                    <h5 class="font-bold text-slate-900 text-sm">${item.title}</h5>
+                                    <div class="flex items-center space-x-3 text-xs text-slate-700 font-medium">
+                                        ${item.time ? `<span><i class="fa-regular fa-clock mr-1" style="color: ${color};"></i>${item.time} Uhr</span>` : ''}
+                                    </div>
+                                    ${item.desc ? `<p class="text-xs text-slate-600 italic pt-0.5"><i class="fa-regular fa-note-sticky mr-1"></i>${item.desc}</p>` : ''}
+                                </div>
+                                <button onclick="deleteCalendar(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer transition"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                            </div>
+                        `;
+                    }).join('') + `</div>`;
+                }
+
+                dayHtml += `</div>`;
+                container.innerHTML = dayHtml;
+
+            } else {
+                // AGENDA- / LISTENANSICHT
+                gridContainer.classList.add('hidden');
+
+                if (monthEvents.length === 0) { 
+                    container.innerHTML = `<div class="text-center py-12 text-slate-400 text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">Keine Termine im ${monthNames[month]}.</div>`; 
+                    return; 
+                }
+
+                container.innerHTML = monthEvents.map(item => {
+                    const color = item.color || '#e11d48';
+                    const paleBg = hexToRgba(color, 0.12);
+                    const isToday = (item.computedDate === todayStr);
+                    const recurrenceText = item.recurrence === 'weekly' ? '🔁 Wöchentlich' : item.recurrence === 'monthly' ? '🔁 Monatlich' : item.recurrence === 'yearly' ? '🔁 Jährlich' : '';
+
+                    return `
+                        <div style="background-color: ${paleBg}; border-color: ${color};" class="border-2 rounded-2xl p-4 shadow-sm flex items-center justify-between space-x-3 transition">
+                            <div class="space-y-1.5 flex-1">
+                                <div class="flex items-center space-x-2">
+                                    <span style="background-color: ${color};" class="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full shadow-xs">${item.category || 'Termin'}</span>
+                                    ${isToday ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white animate-pulse shadow-xs">Heute</span>' : ''}
+                                    ${recurrenceText ? `<span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/70 text-slate-600">${recurrenceText}</span>` : ''}
+                                </div>
+                                <h4 class="font-bold text-slate-900 text-sm">${item.title}</h4>
+                                <div class="flex items-center space-x-3 text-xs text-slate-700 font-medium">
+                                    <span><i class="fa-regular fa-calendar mr-1" style="color: ${color};"></i>${item.computedDate}</span>
+                                    ${item.time ? `<span><i class="fa-regular fa-clock mr-1" style="color: ${color};"></i>${item.time} Uhr</span>` : ''}
+                                </div>
+                                ${item.desc ? `<p class="text-xs text-slate-600 italic pt-0.5"><i class="fa-regular fa-note-sticky mr-1"></i>${item.desc}</p>` : ''}
+                            </div>
+                            <button onclick="deleteCalendar(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer transition"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
 
         function renderTasks() {
             const container = document.getElementById('task-list');
