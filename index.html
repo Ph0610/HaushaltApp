@@ -89,7 +89,7 @@
                     <div id="calendar-grid-container" class="space-y-2 pt-2"></div>
                 </div>
 
-                <!-- Tages-Detailansicht (im Monatsmodus) oder Agenda-Liste (im Listenmodus) -->
+                <!-- Tages-Detailansicht oder Agenda-Liste -->
                 <div id="calendar-content-container" class="space-y-3"></div>
             </section>
 
@@ -298,7 +298,8 @@
         // Kalender Ansichts-Zustand
         let currentCalendarDate = new Date();
         let calendarViewMode = 'month'; // 'month' oder 'list'
-        let selectedDayStr = new Date().toISOString().split('T')[0]; // Standardmäßig heute ausgewählt
+        let selectedDayStr = new Date().toISOString().split('T')[0];
+        let lastPublishedString = '';
 
         function getStorageKey() {
             return 'household_data_' + (currentHousehold ? currentHousehold.trim().toLowerCase() : 'default');
@@ -326,7 +327,8 @@
 
             if (mqttClient && mqttClient.connected && currentHousehold) {
                 const topic = 'haushalt_sync_2026_' + currentHousehold.trim().toLowerCase();
-                mqttClient.publish(topic, JSON.stringify(data), { retain: true });
+                lastPublishedString = JSON.stringify(data);
+                mqttClient.publish(topic, lastPublishedString, { retain: true });
             }
         }
 
@@ -348,21 +350,21 @@
                 if (incomingTopic === topic) {
                     try {
                         const incomingStr = payload.toString();
-                        const currentStr = JSON.stringify(data);
                         
-                        if (incomingStr !== currentStr) {
-                            const remoteData = JSON.parse(incomingStr);
-                            if (remoteData && remoteData.calendar) {
-                                if ('Notification' in window && Notification.permission === 'granted') {
-                                    new Notification('Haushalts-Manager 🏠', {
-                                        body: 'Es gibt Neuigkeiten im gemeinsamen Haushalt!',
-                                        icon: 'https://cdn-icons-png.flaticon.com/512/3076/3076753.png'
-                                    });
-                                }
-                                data = remoteData;
-                                safeStorage.setItem(getStorageKey(), JSON.stringify(data));
-                                renderAll();
+                        // Wenn die Nachricht von uns selbst kommt, ignorieren
+                        if (incomingStr === lastPublishedString) return;
+
+                        const remoteData = JSON.parse(incomingStr);
+                        if (remoteData && remoteData.calendar) {
+                            if ('Notification' in window && Notification.permission === 'granted') {
+                                new Notification('Haushalts-Manager 🏠', {
+                                    body: 'Es gibt Neuigkeiten im gemeinsamen Haushalt!',
+                                    icon: 'https://cdn-icons-png.flaticon.com/512/3076/3076753.png'
+                                });
                             }
+                            data = remoteData;
+                            safeStorage.setItem(getStorageKey(), JSON.stringify(data));
+                            renderAll();
                         }
                     } catch(e) {}
                 }
