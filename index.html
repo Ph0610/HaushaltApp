@@ -168,7 +168,7 @@
 
     <!-- MODALS -->
     <div id="calendar-modal" class="modal hidden fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-slate-900 dark:text-slate-100">
+        <div class="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-slate-900 dark:text-slate-100 max-h-[90vh] overflow-y-auto">
             <h3 id="calendar-modal-title" class="text-base font-bold text-slate-900 dark:text-white">Neuen Termin hinzufügen</h3>
             <div class="space-y-3">
                 <div>
@@ -177,12 +177,22 @@
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Datum</label>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Start-Datum</label>
                         <input type="date" id="cal-date" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Uhrzeit (opt.)</label>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Start-Uhrzeit (opt.)</label>
                         <input type="time" id="cal-time" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">End-Datum (opt.)</label>
+                        <input type="date" id="cal-end-date" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">End-Uhrzeit (opt.)</label>
+                        <input type="time" id="cal-end-time" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -206,9 +216,13 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Notiz (opt.)</label>
-                        <input type="text" id="cal-desc" placeholder="Details" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Wiederholung bis (opt.)</label>
+                        <input type="date" id="cal-recurrence-end" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                     </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Notiz (opt.)</label>
+                    <input type="text" id="cal-desc" placeholder="Details" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                 </div>
                 <div class="flex space-x-3 pt-2">
                     <button onclick="closeModal('calendar-modal')" class="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
@@ -406,7 +420,7 @@
             }
         };
 
-        // ICS Export Funktion für den Handy-Kalender
+        // ICS Export mit voller Unterstützung für End-Zeiten, Mehrtägigkeit und Wiederholungs-Enden
         window.exportToICS = function() {
             if (!data.calendar || data.calendar.length === 0) {
                 alert('Keine Termine zum Exportieren vorhanden.');
@@ -417,13 +431,28 @@
             
             data.calendar.forEach(item => {
                 if (!item.date) return;
-                const dStr = item.date.replace(/-/g, '');
-                const timeStr = item.time ? item.time.replace(':', '') + '00' : '000000';
+                const dStart = item.date.replace(/-/g, '');
+                const tStart = item.time ? item.time.replace(':', '') + '00' : '000000';
+                
+                let dEnd = item.endDate ? item.endDate.replace(/-/g, '') : dStart;
+                let tEnd = item.endTime ? item.endTime.replace(':', '') + '00' : tStart;
                 
                 icsContent += "BEGIN:VEVENT\n";
                 icsContent += `UID:event_${item.id}@haushaltsmanager\n`;
-                icsContent += `DTSTAMP:${dStr}T${timeStr}\n`;
-                icsContent += `DTSTART:${dStr}T${timeStr}\n`;
+                icsContent += `DTSTAMP:${dStart}T${tStart}\n`;
+                icsContent += `DTSTART:${dStart}T${tStart}\n`;
+                icsContent += `DTEND:${dEnd}T${tEnd}\n`;
+                
+                if (item.recurrence && item.recurrence !== 'none') {
+                    let freq = item.recurrence.toUpperCase();
+                    let rrule = `RRULE:FREQ=${freq}`;
+                    if (item.recurrenceEnd) {
+                        const untilStr = item.recurrenceEnd.replace(/-/g, '') + 'T235959Z';
+                        rrule += `;UNTIL=${untilStr}`;
+                    }
+                    icsContent += `${rrule}\n`;
+                }
+                
                 icsContent += `SUMMARY:${item.title.replace(/[\\;,]/g, '\\$&')}\n`;
                 if (item.desc) icsContent += `DESCRIPTION:${item.desc.replace(/[\\;,]/g, '\\$&')}\n`;
                 icsContent += "END:VEVENT\n";
@@ -611,9 +640,12 @@
             document.getElementById('cal-title').value = '';
             document.getElementById('cal-date').value = dateStr || selectedDayStr || getLocalDateString();
             document.getElementById('cal-time').value = '';
+            document.getElementById('cal-end-date').value = '';
+            document.getElementById('cal-end-time').value = '';
             document.getElementById('cal-category').value = 'Termin';
             document.getElementById('cal-color').value = '#e11d48';
             document.getElementById('cal-recurrence').value = 'none';
+            document.getElementById('cal-recurrence-end').value = '';
             document.getElementById('cal-desc').value = '';
             openModal('calendar-modal');
         };
@@ -627,9 +659,12 @@
             document.getElementById('cal-title').value = item.title || '';
             document.getElementById('cal-date').value = item.date || getLocalDateString();
             document.getElementById('cal-time').value = item.time || '';
+            document.getElementById('cal-end-date').value = item.endDate || '';
+            document.getElementById('cal-end-time').value = item.endTime || '';
             document.getElementById('cal-category').value = item.category || 'Termin';
             document.getElementById('cal-color').value = item.color || '#e11d48';
             document.getElementById('cal-recurrence').value = item.recurrence || 'none';
+            document.getElementById('cal-recurrence-end').value = item.recurrenceEnd || '';
             document.getElementById('cal-desc').value = item.desc || '';
             
             openModal('calendar-modal');
@@ -639,13 +674,16 @@
             const title = document.getElementById('cal-title').value.trim();
             const date = document.getElementById('cal-date').value;
             const time = document.getElementById('cal-time').value;
+            const endDate = document.getElementById('cal-end-date').value;
+            const endTime = document.getElementById('cal-end-time').value;
             const category = document.getElementById('cal-category').value.trim() || 'Termin';
             const color = document.getElementById('cal-color').value || '#e11d48';
             const recurrence = document.getElementById('cal-recurrence').value || 'none';
+            const recurrenceEnd = document.getElementById('cal-recurrence-end').value;
             const desc = document.getElementById('cal-desc').value.trim();
 
             if (!title) { alert('Bitte einen Titel eingeben.'); return; }
-            if (!date) { alert('Bitte ein Datum wählen.'); return; }
+            if (!date) { alert('Bitte ein Start-Datum wählen.'); return; }
 
             if (editingCalendarId) {
                 const item = data.calendar.find(c => c.id === editingCalendarId);
@@ -653,14 +691,17 @@
                     item.title = title;
                     item.date = date;
                     item.time = time;
+                    item.endDate = endDate;
+                    item.endTime = endTime;
                     item.category = category;
                     item.color = color;
                     item.recurrence = recurrence;
+                    item.recurrenceEnd = recurrenceEnd;
                     item.desc = desc;
                 }
                 editingCalendarId = null;
             } else  {
-                data.calendar.push({ id: Date.now(), title, date, time, category, color, recurrence, desc });
+                data.calendar.push({ id: Date.now(), title, date, time, endDate, endTime, category, color, recurrence, recurrenceEnd, desc });
             }
             
             selectedDayStr = date;
@@ -731,9 +772,12 @@
             return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
         }
 
+        // Erweiterte Event-Generierung mit Berücksichtigung von End-Daten und Wiederholungs-Enden
         function getEventsForMonth(year, month) {
             const events = [];
             const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const targetStart = new Date(year, month, 1);
+            const targetEnd = new Date(year, month + 1, daysInMonth);
 
             (data.calendar || []).forEach(item => {
                 if (!item.date) return;
@@ -742,27 +786,83 @@
                 const itemMonth = parseInt(parts[1]) - 1;
                 const itemDay = parseInt(parts[2]);
 
+                const recEnd = item.recurrenceEnd ? new Date(item.recurrenceEnd) : null;
+                const durDays = (item.endDate && item.endDate >= item.date) ? 
+                    Math.round((new Date(item.endDate) - new Date(item.date)) / (1000 * 60 * 60 * 24)) : 0;
+
                 if (item.recurrence === 'yearly') {
-                    if (itemMonth === month && itemDay <= daysInMonth) {
-                        events.push({ ...item, computedDate: `${year}-${String(month+1).padStart(2,'0')}-${String(itemDay).padStart(2,'0')}` });
+                    let y = Math.max(itemYear, year);
+                    while (true) {
+                        const instDate = new Date(y, itemMonth, itemDay);
+                        if (instDate > targetEnd) break;
+                        if (recEnd && instDate > recEnd) break;
+
+                        const instEndDate = new Date(instDate);
+                        instEndDate.setDate(instEndDate.getDate() + durDays);
+
+                        if (instEndDate >= targetStart && instDate <= targetEnd) {
+                            let d = new Date(Math.max(instDate, targetStart));
+                            const maxD = new Date(Math.min(instEndDate, targetEnd));
+                            while (d <= maxD) {
+                                events.push({ ...item, computedDate: getLocalDateString(d) });
+                                d.setDate(d.getDate() + 1);
+                            }
+                        }
+                        y++;
+                        if (y > year + 1) break;
                     }
                 } else if (item.recurrence === 'monthly') {
-                    if ((itemYear < year || (itemYear === year && itemMonth <= month)) && itemDay <= daysInMonth) {
-                        events.push({ ...item, computedDate: `${year}-${String(month+1).padStart(2,'0')}-${String(itemDay).padStart(2,'0')}` });
+                    let y = itemYear;
+                    let m = itemMonth;
+                    while (true) {
+                        const instDate = new Date(y, m, itemDay);
+                        if (instDate > targetEnd) break;
+                        if (recEnd && instDate > recEnd) break;
+
+                        const instEndDate = new Date(instDate);
+                        instEndDate.setDate(instEndDate.getDate() + durDays);
+
+                        if (instEndDate >= targetStart && instDate <= targetEnd) {
+                            let d = new Date(Math.max(instDate, targetStart));
+                            const maxD = new Date(Math.min(instEndDate, targetEnd));
+                            while (d <= maxD) {
+                                events.push({ ...item, computedDate: getLocalDateString(d) });
+                                d.setDate(d.getDate() + 1);
+                            }
+                        }
+
+                        m++;
+                        if (m > 11) { m = 0; y++; }
+                        if (y > year + 1) break;
                     }
                 } else if (item.recurrence === 'weekly') {
                     let d = new Date(itemYear, itemMonth, itemDay);
-                    const targetStart = new Date(year, month, 1);
-                    const targetEnd = new Date(year, month + 1, daysInMonth);
                     while (d <= targetEnd) {
-                        if (d >= targetStart && d <= targetEnd) {
-                            events.push({ ...item, computedDate: getLocalDateString(d) });
+                        if (recEnd && d > recEnd) break;
+                        const instEndDate = new Date(d);
+                        instEndDate.setDate(instEndDate.getDate() + durDays);
+
+                        if (instEndDate >= targetStart && d <= targetEnd) {
+                            let curr = new Date(Math.max(d, targetStart));
+                            const maxD = new Date(Math.min(instEndDate, targetEnd));
+                            while (curr <= maxD) {
+                                events.push({ ...item, computedDate: getLocalDateString(curr) });
+                                curr.setDate(curr.getDate() + 1);
+                            }
                         }
                         d.setDate(d.getDate() + 7);
                     }
                 } else {
-                    if (itemYear === year && itemMonth === month) {
-                        events.push({ ...item, computedDate: item.date });
+                    const instDate = new Date(itemYear, itemMonth, itemDay);
+                    const instEndDate = item.endDate ? new Date(item.endDate) : instDate;
+
+                    if (instEndDate >= targetStart && instDate <= targetEnd) {
+                        let d = new Date(Math.max(instDate, targetStart));
+                        const maxD = new Date(Math.min(instEndDate, targetEnd));
+                        while (d <= maxD) {
+                            events.push({ ...item, computedDate: getLocalDateString(d) });
+                            d.setDate(d.getDate() + 1);
+                        }
                     }
                 }
             });
@@ -842,20 +942,30 @@
                 if (monthEvents.length === 0) {
                     listHtml += `<div class="text-center py-6 text-slate-400 dark:text-slate-500 text-xs italic">Keine Termine in diesem Monat.</div>`;
                 } else {
-                    listHtml += `<div class="space-y-2.5 pt-1">` + monthEvents.map(item => {
+                    // Unique events for the list view in this month
+                    const seenIds = new Set();
+                    const uniqueMonthEvents = monthEvents.filter(item => {
+                        if (seenIds.has(item.id)) return false;
+                        seenIds.add(item.id);
+                        return true;
+                    });
+
+                    listHtml += `<div class="space-y-2.5 pt-1">` + uniqueMonthEvents.map(item => {
                         const color = item.color || '#e11d48';
                         const paleBg = hexToRgba(color, 0.12);
+                        const dateDisplay = item.endDate && item.endDate !== item.date ? `${item.date} bis ${item.endDate}` : item.date;
+                        const timeDisplay = item.time ? `${item.time} ${item.endTime ? '– ' + item.endTime : ''} Uhr` : '';
 
                         return `
                             <div style="background-color: ${paleBg}; border-color: ${color};" class="border-2 rounded-2xl p-3.5 shadow-xs flex items-center justify-between space-x-3 transition">
                                 <div class="space-y-1 flex-1">
                                     <div class="flex items-center space-x-2">
                                         <span style="background-color: ${color};" class="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full shadow-xs">${item.category || 'Termin'}</span>
-                                        <span class="text-[10px] font-bold text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md"><i class="fa-regular fa-calendar mr-1"></i>${item.computedDate}</span>
+                                        <span class="text-[10px] font-bold text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md"><i class="fa-regular fa-calendar mr-1"></i>${dateDisplay}</span>
                                     </div>
                                     <h5 class="font-bold text-slate-900 dark:text-white text-sm">${item.title}</h5>
                                     <div class="flex items-center space-x-3 text-xs text-slate-700 dark:text-slate-300 font-medium">
-                                        ${item.time ? `<span><i class="fa-regular fa-clock mr-1" style="color: ${color};"></i>${item.time} Uhr</span>` : ''}
+                                        ${timeDisplay ? `<span><i class="fa-regular fa-clock mr-1" style="color: ${color};"></i>${timeDisplay}</span>` : ''}
                                     </div>
                                     ${item.desc ? `<p class="text-xs text-slate-600 dark:text-slate-300 italic pt-0.5"><i class="fa-regular fa-note-sticky mr-1"></i>${item.desc}</p>` : ''}
                                 </div>
