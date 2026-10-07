@@ -237,8 +237,21 @@
             <div class="space-y-3">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Titel</label>
-                    <input type="text" id="cal-title" placeholder="z.B. Geburtstag Oma" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400">
+                    <input type="text" id="cal-title" placeholder="z.B. Unser Date / Jahrestag" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400">
                 </div>
+                
+                <!-- Als Date / Erinnerung Checkbox & Foto Upload -->
+                <div class="bg-rose-50/60 dark:bg-rose-950/30 border border-rose-200/60 dark:border-rose-900/40 rounded-2xl p-3.5 space-y-3">
+                    <div class="flex items-center space-x-2.5">
+                        <input type="checkbox" id="cal-is-date" onchange="toggleCalDateOptions()" class="w-4 h-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer">
+                        <label for="cal-is-date" class="text-xs font-bold text-rose-700 dark:text-rose-300 cursor-pointer"><i class="fa-solid fa-heart mr-1.5 text-rose-500"></i>Als Date / Erinnerung markieren</label>
+                    </div>
+                    <div id="cal-date-photo-container" class="hidden space-y-1.5 pt-1">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Erinnerungs-Foto hochladen (opt.)</label>
+                        <input type="file" id="cal-image-input" accept="image/*" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 cursor-pointer">
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Start-Datum</label>
@@ -262,7 +275,7 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Kategorie</label>
-                        <input type="text" id="cal-category" placeholder="z.B. Arbeit" value="Termin" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                        <input type="text" id="cal-category" placeholder="z.B. Date" value="Termin" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Farbe</label>
@@ -293,6 +306,20 @@
                     <button onclick="saveCalendar()" class="flex-1 py-2.5 bg-rose-600 text-white font-semibold rounded-xl text-sm shadow-md cursor-pointer">Speichern</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- PHOTO VIEWER MODAL -->
+    <div id="photo-viewer-modal" class="modal hidden fixed inset-0 bg-slate-900/80 dark:bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-slate-900 dark:text-slate-100 text-center relative border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center justify-between">
+                <h3 id="photo-viewer-title" class="text-base font-bold text-slate-900 dark:text-white"><i class="fa-solid fa-heart text-rose-500 mr-2"></i>Erinnerung</h3>
+                <button onclick="closeModal('photo-viewer-modal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 max-h-[70vh] flex items-center justify-center bg-slate-100 dark:bg-slate-950">
+                <img id="photo-viewer-img" src="" alt="Date Foto" class="max-w-full max-h-[60vh] object-contain rounded-xl">
+            </div>
+            <button onclick="closeModal('photo-viewer-modal')" class="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl text-sm shadow-md cursor-pointer transition">Schließen</button>
         </div>
     </div>
 
@@ -782,6 +809,49 @@
 
         window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); };
 
+        window.toggleCalDateOptions = function() {
+            const isChecked = document.getElementById('cal-is-date').checked;
+            const container = document.getElementById('cal-date-photo-container');
+            if (isChecked) {
+                container.classList.remove('hidden');
+                document.getElementById('cal-category').value = 'Date';
+                document.getElementById('cal-color').value = '#e11d48';
+            } else {
+                container.classList.add('hidden');
+            }
+        };
+
+        window.openPhotoViewer = function(imgSrc, title) {
+            document.getElementById('photo-viewer-title').innerHTML = `<i class="fa-solid fa-heart text-rose-500 mr-2"></i>Erinnerung: ${title}`;
+            document.getElementById('photo-viewer-img').src = imgSrc;
+            openModal('photo-viewer-modal');
+        };
+
+        // Im Nachhinein Foto zu einem bestehenden Kalendereintrag hinzufügen
+        window.triggerPhotoUpload = function(eventId) {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        const item = data.calendar.find(c => c.id === eventId);
+                        if (item) {
+                            item.image = evt.target.result;
+                            item.isDate = true;
+                            if (item.category === 'Termin') item.category = 'Date';
+                            saveData();
+                            alert('Erinnerungs-Foto erfolgreich hinzugefügt! ❤️');
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            fileInput.click();
+        };
+
         // Neue Zutaten-Zeile im Rezept-Modal hinzufügen
         window.addIngredientRow = function(amount = '', unit = '', name = '') {
             const container = document.getElementById('recipe-ingredients-rows');
@@ -886,6 +956,9 @@
             editingCalendarId = null;
             document.getElementById('calendar-modal-title').textContent = 'Neuen Termin hinzufügen';
             document.getElementById('cal-title').value = '';
+            document.getElementById('cal-is-date').checked = false;
+            document.getElementById('cal-date-photo-container').classList.add('hidden');
+            document.getElementById('cal-image-input').value = '';
             document.getElementById('cal-date').value = dateStr || selectedDayStr || getLocalDateString();
             document.getElementById('cal-time').value = '';
             document.getElementById('cal-end-date').value = '';
@@ -905,6 +978,13 @@
             editingCalendarId = id;
             document.getElementById('calendar-modal-title').textContent = 'Termin bearbeiten';
             document.getElementById('cal-title').value = item.title || '';
+            document.getElementById('cal-is-date').checked = !!item.isDate;
+            if (item.isDate) {
+                document.getElementById('cal-date-photo-container').classList.remove('hidden');
+            } else {
+                document.getElementById('cal-date-photo-container').classList.add('hidden');
+            }
+            document.getElementById('cal-image-input').value = '';
             document.getElementById('cal-date').value = item.date || getLocalDateString();
             document.getElementById('cal-time').value = item.time || '';
             document.getElementById('cal-end-date').value = item.endDate || '';
@@ -920,6 +1000,7 @@
 
         window.saveCalendar = function() {
             const title = document.getElementById('cal-title').value.trim();
+            const isDate = document.getElementById('cal-is-date').checked;
             const date = document.getElementById('cal-date').value;
             const time = document.getElementById('cal-time').value;
             const endDate = document.getElementById('cal-end-date').value;
@@ -929,14 +1010,33 @@
             const recurrence = document.getElementById('cal-recurrence').value || 'none';
             const recurrenceEnd = document.getElementById('cal-recurrence-end').value;
             const desc = document.getElementById('cal-desc').value.trim();
+            const imageInput = document.getElementById('cal-image-input');
 
             if (!title) { alert('Bitte einen Titel eingeben.'); return; }
             if (!date) { alert('Bitte ein Start-Datum wählen.'); return; }
 
+            if (imageInput && imageInput.files && imageInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    pushCalendarData(title, isDate, date, time, endDate, endTime, category, color, recurrence, recurrenceEnd, desc, e.target.result);
+                };
+                reader.readAsDataURL(imageInput.files[0]);
+            } else {
+                let existingImage = null;
+                if (editingCalendarId) {
+                    const old = (data.calendar || []).find(c => c.id === editingCalendarId);
+                    if (old) existingImage = old.image;
+                }
+                pushCalendarData(title, isDate, date, time, endDate, endTime, category, color, recurrence, recurrenceEnd, desc, existingImage);
+            }
+        };
+
+        function pushCalendarData(title, isDate, date, time, endDate, endTime, category, color, recurrence, recurrenceEnd, desc, image) {
             if (editingCalendarId) {
                 const item = data.calendar.find(c => c.id === editingCalendarId);
                 if (item) {
                     item.title = title;
+                    item.isDate = isDate;
                     item.date = date;
                     item.time = time;
                     item.endDate = endDate;
@@ -946,10 +1046,11 @@
                     item.recurrence = recurrence;
                     item.recurrenceEnd = recurrenceEnd;
                     item.desc = desc;
+                    if (image !== undefined && image !== null) item.image = image;
                 }
                 editingCalendarId = null;
             } else  {
-                data.calendar.push({ id: Date.now(), title, date, time, endDate, endTime, category, color, recurrence, recurrenceEnd, desc });
+                data.calendar.push({ id: Date.now(), title, isDate, date, time, endDate, endTime, category, color, recurrence, recurrenceEnd, desc, image });
             }
             
             selectedDayStr = date;
@@ -958,7 +1059,7 @@
 
             saveData();
             closeModal('calendar-modal');
-        };
+        }
 
         window.saveTask = function() {
             const title = document.getElementById('task-title').value.trim();
@@ -1297,6 +1398,10 @@
                                 <h5 class="font-bold text-sm text-slate-800 dark:text-slate-200 mt-1">${e.title}</h5>
                                 ${e.time ? `<span class="text-xs text-slate-500"><i class="fa-regular fa-clock mr-1"></i>${e.time} Uhr</span>` : ''}
                             </div>
+                            <div class="flex items-center space-x-1">
+                                <button onclick="triggerPhotoUpload(${e.id})" class="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-2 cursor-pointer transition" title="Erinnerungsfoto hinzufügen / ändern"><i class="fa-solid fa-camera text-sm"></i></button>
+                                ${e.image ? `<button onclick="openPhotoViewer('${e.image}', '${e.title.replace(/'/g, "\\'")}')" class="text-rose-600 dark:text-rose-400 hover:scale-110 p-2 cursor-pointer transition" title="Erinnerungsfoto ansehen"><i class="fa-solid fa-heart text-base animate-pulse"></i></button>` : ''}
+                            </div>
                         </div>
                     `;
                 }).join('');
@@ -1405,6 +1510,7 @@
                                 <div class="space-y-1 flex-1">
                                     <div class="flex items-center space-x-2">
                                         <span style="background-color: ${color};" class="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full shadow-xs">${item.category || 'Termin'}</span>
+                                        ${item.isDate ? '<span class="text-[10px] font-bold bg-rose-600 text-white px-2 py-0.5 rounded-full shadow-xs"><i class="fa-solid fa-heart mr-1"></i>Date</span>' : ''}
                                         <span class="text-[10px] font-bold text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md"><i class="fa-regular fa-calendar mr-1"></i>${dateDisplay}</span>
                                     </div>
                                     <h5 class="font-bold text-slate-900 dark:text-white text-sm">${item.title}</h5>
@@ -1414,6 +1520,8 @@
                                     ${item.desc ? `<p class="text-xs text-slate-600 dark:text-slate-300 italic pt-0.5"><i class="fa-regular fa-note-sticky mr-1"></i>${item.desc}</p>` : ''}
                                 </div>
                                 <div class="flex items-center space-x-1">
+                                    <button onclick="triggerPhotoUpload(${item.id})" class="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-2 cursor-pointer transition" title="Erinnerungsfoto hinzufügen / ändern"><i class="fa-solid fa-camera text-sm"></i></button>
+                                    ${item.image ? `<button onclick="openPhotoViewer('${item.image}', '${item.title.replace(/'/g, "\\'")}')" class="text-rose-600 dark:text-rose-400 hover:scale-110 p-2 cursor-pointer transition" title="Erinnerungsfoto ansehen"><i class="fa-solid fa-heart text-base animate-pulse"></i></button>` : ''}
                                     <button onclick="openModalForEdit(${item.id})" class="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-2 cursor-pointer transition" title="Bearbeiten"><i class="fa-solid fa-pen text-sm"></i></button>
                                     <button onclick="deleteCalendar(${item.id})" class="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-2 cursor-pointer transition" title="Löschen"><i class="fa-solid fa-trash-can text-sm"></i></button>
                                 </div>
@@ -1443,6 +1551,7 @@
                             <div class="space-y-1.5 flex-1">
                                 <div class="flex items-center space-x-2">
                                     <span style="background-color: ${color};" class="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full shadow-xs">${item.category || 'Termin'}</span>
+                                    ${item.isDate ? '<span class="text-[10px] font-bold bg-rose-600 text-white px-2 py-0.5 rounded-full shadow-xs"><i class="fa-solid fa-heart mr-1"></i>Date</span>' : ''}
                                     ${isToday ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white animate-pulse shadow-xs">Heute</span>' : ''}
                                 </div>
                                 <h4 class="font-bold text-slate-900 dark:text-white text-sm">${item.title}</h4>
@@ -1453,6 +1562,8 @@
                                 ${item.desc ? `<p class="text-xs text-slate-600 dark:text-slate-300 italic pt-0.5"><i class="fa-regular fa-note-sticky mr-1"></i>${item.desc}</p>` : ''}
                             </div>
                             <div class="flex items-center space-x-1">
+                                <button onclick="triggerPhotoUpload(${item.id})" class="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-2 cursor-pointer transition" title="Erinnerungsfoto hinzufügen / ändern"><i class="fa-solid fa-camera text-sm"></i></button>
+                                ${item.image ? `<button onclick="openPhotoViewer('${item.image}', '${item.title.replace(/'/g, "\\'")}')" class="text-rose-600 dark:text-rose-400 hover:scale-110 p-2 cursor-pointer transition" title="Erinnerungsfoto ansehen"><i class="fa-solid fa-heart text-base animate-pulse"></i></button>` : ''}
                                 <button onclick="openModalForEdit(${item.id})" class="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-2 cursor-pointer transition" title="Bearbeiten"><i class="fa-solid fa-pen text-sm"></i></button>
                                 <button onclick="deleteCalendar(${item.id})" class="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-2 cursor-pointer transition" title="Löschen"><i class="fa-solid fa-trash-can text-sm"></i></button>
                             </div>
