@@ -192,11 +192,11 @@
                         <h3 class="text-lg font-bold text-slate-900 dark:text-white">Digitales Rezeptbuch</h3>
                         <p class="text-xs text-slate-400 dark:text-slate-400">Eure Lieblingsgerichte & Fotos</p>
                     </div>
-                    <button onclick="openModal('recipe-modal')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
+                    <button onclick="openRecipeModalForNew()" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
                         <i class="fa-solid fa-plus mr-1"></i> Rezept
                     </button>
                 </div>
-                <div id="recipe-list" class="space-y-3"></div>
+                <div id="recipe-list" class="space-y-4"></div>
             </section>
 
         </main>
@@ -349,6 +349,7 @@
                         <option value="">-- Eigenes Gericht eingeben --</option>
                     </select>
                 </div>
+                <input type="hidden" id="meal-recipe-id" value="">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Gericht / Hauptspeise</label>
                     <input type="text" id="meal-title" placeholder="z.B. Spaghetti Bolognese" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
@@ -372,8 +373,8 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Zutaten / Notiz (opt.)</label>
-                    <input type="text" id="meal-desc" placeholder="z.B. Hackfleisch, Tomaten, Nudeln" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Zutaten-Vorschau / Notiz (opt.)</label>
+                    <input type="text" id="meal-desc" placeholder="z.B. Cornflakes, Milch" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                 </div>
                 <div class="flex space-x-3 pt-2">
                     <button onclick="closeModal('meal-modal')" class="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
@@ -386,24 +387,39 @@
     <!-- RECIPE MODAL -->
     <div id="recipe-modal" class="modal hidden fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
         <div class="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-slate-900 dark:text-slate-100 max-h-[90vh] overflow-y-auto">
-            <h3 class="text-base font-bold text-slate-900 dark:text-white">Neues Rezept hinzufügen</h3>
+            <h3 id="recipe-modal-title" class="text-base font-bold text-slate-900 dark:text-white">Neues Rezept hinzufügen</h3>
             <div class="space-y-3">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Rezept-Titel</label>
-                    <input type="text" id="recipe-title" placeholder="z.B. Cremige Tomatensuppe" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                    <input type="text" id="recipe-title" placeholder="z.B. Cornflakes mit Milch" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Kategorie</label>
-                    <input type="text" id="recipe-category" placeholder="z.B. Hauptgericht" value="Hauptgericht" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Übergruppe</label>
+                        <select id="recipe-diet" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                            <option value="Vegetarisch">Vegetarisch</option>
+                            <option value="Nicht vegetarisch">Nicht vegetarisch</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Kategorie</label>
+                        <input type="text" id="recipe-category" placeholder="z.B. Frühstück" value="Hauptgericht" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Foto (opt.)</label>
                     <input type="file" id="recipe-image-input" accept="image/*" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 cursor-pointer">
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Zutaten (jede Zeile eine Zutat)</label>
-                    <textarea id="recipe-ingredients" rows="3" placeholder="Cornflakes&#10;Milch" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100"></textarea>
+                
+                <!-- Strukturierte Zutaten Liste -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400">Zutaten (Menge, Einheit, Name)</label>
+                        <button type="button" onclick="addIngredientRow()" class="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"><i class="fa-solid fa-plus mr-1"></i>Zutat hinzufügen</button>
+                    </div>
+                    <div id="recipe-ingredients-rows" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
                 </div>
+
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Zubereitung (opt.)</label>
                     <textarea id="recipe-instructions" rows="3" placeholder="Cornflakes in eine Schüssel geben, Milch drüber..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100"></textarea>
@@ -493,6 +509,7 @@
         let calendarViewMode = 'month';
         let selectedDayStr = getLocalDateString();
         let editingCalendarId = null;
+        let editingRecipeId = null;
 
         function getStorageKey() {
             return 'household_data_' + (currentHousehold ? currentHousehold.trim().toLowerCase() : 'default');
@@ -749,8 +766,8 @@
                 document.getElementById('meal-title').value = '';
                 document.getElementById('meal-dessert').value = '';
                 document.getElementById('meal-desc').value = '';
+                document.getElementById('meal-recipe-id').value = '';
                 
-                // Rezept-Auswahl befüllen
                 const selectEl = document.getElementById('meal-recipe-select');
                 if (selectEl) {
                     let html = '<option value="">-- Eigenes Gericht eingeben --</option>';
@@ -759,25 +776,85 @@
                     });
                     selectEl.innerHTML = html;
                 }
-            } else if (id === 'recipe-modal') {
-                document.getElementById('recipe-title').value = '';
-                document.getElementById('recipe-category').value = 'Hauptgericht';
-                document.getElementById('recipe-image-input').value = '';
-                document.getElementById('recipe-ingredients').value = '';
-                document.getElementById('recipe-instructions').value = '';
             }
             document.getElementById(id).classList.remove('hidden');
         };
 
         window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); };
 
+        // Neue Zutaten-Zeile im Rezept-Modal hinzufügen
+        window.addIngredientRow = function(amount = '', unit = '', name = '') {
+            const container = document.getElementById('recipe-ingredients-rows');
+            const div = document.createElement('div');
+            div.className = "recipe-ingredient-row flex items-center space-x-2 bg-slate-50 dark:bg-slate-800 p-2 rounded-xl border border-slate-200 dark:border-slate-700";
+            div.innerHTML = `
+                <input type="text" placeholder="Menge" value="${amount}" class="ing-amount w-16 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+                <input type="text" placeholder="Einheit (g, ml)" value="${unit}" class="ing-unit w-20 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+                <input type="text" placeholder="Zutat (z.B. Milch)" value="${name}" class="ing-name flex-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+                <button type="button" onclick="this.closest('.recipe-ingredient-row').remove()" class="text-slate-400 hover:text-rose-600 p-1.5 cursor-pointer" title="Entfernen"><i class="fa-solid fa-xmark text-sm"></i></button>
+            `;
+            container.appendChild(div);
+        };
+
+        window.openRecipeModalForNew = function() {
+            editingRecipeId = null;
+            document.getElementById('recipe-modal-title').textContent = 'Neues Rezept hinzufügen';
+            document.getElementById('recipe-title').value = '';
+            document.getElementById('recipe-diet').value = 'Vegetarisch';
+            document.getElementById('recipe-category').value = 'Hauptgericht';
+            document.getElementById('recipe-image-input').value = '';
+            document.getElementById('recipe-instructions').value = '';
+            document.getElementById('recipe-ingredients-rows').innerHTML = '';
+            addIngredientRow();
+            addIngredientRow();
+            openModal('recipe-modal');
+        };
+
+        window.openRecipeModalForEdit = function(recipeId) {
+            const recipe = (data.recipes || []).find(r => r.id === recipeId);
+            if (!recipe) return;
+            editingRecipeId = recipeId;
+            document.getElementById('recipe-modal-title').textContent = 'Rezept bearbeiten';
+            document.getElementById('recipe-title').value = recipe.title || '';
+            document.getElementById('recipe-diet').value = recipe.diet || 'Vegetarisch';
+            document.getElementById('recipe-category').value = recipe.category || 'Hauptgericht';
+            document.getElementById('recipe-image-input').value = '';
+            document.getElementById('recipe-instructions').value = recipe.instructions || '';
+            
+            const container = document.getElementById('recipe-ingredients-rows');
+            container.innerHTML = '';
+
+            if (Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0) {
+                recipe.ingredients.forEach(ing => {
+                    addIngredientRow(ing.amount || '', ing.unit || '', ing.name || '');
+                });
+            } else if (typeof recipe.ingredients === 'string') {
+                const lines = recipe.ingredients.split(/\r?\n|,|;/);
+                lines.forEach(l => {
+                    if (l.trim()) addIngredientRow('', '', l.trim());
+                });
+            }
+            if (container.children.length === 0) {
+                addIngredientRow();
+            }
+            openModal('recipe-modal');
+        };
+
         window.onMealRecipeSelect = function(selectEl) {
             const recipeId = selectEl.value;
-            if (!recipeId) return;
+            if (!recipeId) {
+                document.getElementById('meal-recipe-id').value = '';
+                return;
+            }
             const recipe = (data.recipes || []).find(r => r.id == recipeId);
             if (recipe) {
+                document.getElementById('meal-recipe-id').value = recipe.id;
                 document.getElementById('meal-title').value = recipe.title || '';
-                document.getElementById('meal-desc').value = recipe.ingredients || '';
+                let ingStr = '';
+                if (Array.isArray(recipe.ingredients)) {
+                    ingStr = recipe.ingredients.map(i => `${i.amount} ${i.unit} ${i.name}`.trim()).join(', ');
+                }
+                document.getElementById('meal-desc').value = ingStr;
             }
         };
 
@@ -911,10 +988,12 @@
             const date = document.getElementById('meal-date').value;
             const type = document.getElementById('meal-type').value;
             const desc = document.getElementById('meal-desc').value.trim();
+            const recipeId = document.getElementById('meal-recipe-id').value;
+
             if (!title) { alert('Bitte ein Gericht eingeben.'); return; }
             if (!date) { alert('Bitte ein Datum wählen.'); return; }
             if (!data.meals) data.meals = [];
-            data.meals.push({ id: Date.now(), title, dessert, date, type, desc });
+            data.meals.push({ id: Date.now(), recipeId: recipeId ? parseInt(recipeId) : null, title, dessert, date, type, desc });
             data.meals.sort((a, b) => a.date > b.date ? 1 : -1);
             saveData();
             closeModal('meal-modal');
@@ -922,28 +1001,56 @@
 
         window.saveRecipe = function() {
             const title = document.getElementById('recipe-title').value.trim();
+            const diet = document.getElementById('recipe-diet').value;
             const category = document.getElementById('recipe-category').value.trim() || 'Hauptgericht';
-            const ingredients = document.getElementById('recipe-ingredients').value.trim();
             const instructions = document.getElementById('recipe-instructions').value.trim();
             const imageInput = document.getElementById('recipe-image-input');
 
             if (!title) { alert('Bitte einen Rezept-Titel eingeben.'); return; }
 
+            const rows = document.querySelectorAll('.recipe-ingredient-row');
+            const ingredients = [];
+            rows.forEach(r => {
+                const amount = r.querySelector('.ing-amount').value.trim();
+                const unit = r.querySelector('.ing-unit').value.trim();
+                const name = r.querySelector('.ing-name').value.trim();
+                if (name || amount || unit) {
+                    ingredients.push({ amount, unit, name });
+                }
+            });
+
             if (imageInput && imageInput.files && imageInput.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const imageData = e.target.result;
-                    pushRecipeData(title, category, ingredients, instructions, imageData);
+                    pushRecipeData(title, diet, category, ingredients, instructions, e.target.result);
                 };
                 reader.readAsDataURL(imageInput.files[0]);
             } else {
-                pushRecipeData(title, category, ingredients, instructions, null);
+                let existingImage = null;
+                if (editingRecipeId) {
+                    const old = (data.recipes || []).find(r => r.id === editingRecipeId);
+                    if (old) existingImage = old.image;
+                }
+                pushRecipeData(title, diet, category, ingredients, instructions, existingImage);
             }
         };
 
-        function pushRecipeData(title, category, ingredients, instructions, image) {
+        function pushRecipeData(title, diet, category, ingredients, instructions, image) {
             if (!data.recipes) data.recipes = [];
-            data.recipes.push({ id: Date.now(), title, category, ingredients, instructions, image });
+            if (editingRecipeId) {
+                const recipe = data.recipes.find(r => r.id === editingRecipeId);
+                if (recipe) {
+                    recipe.title = title;
+                    recipe.diet = diet;
+                    recipe.category = category;
+                    recipe.ingredients = ingredients;
+                    recipe.instructions = instructions;
+                    recipe.image = image;
+                }
+                editingRecipeId = null;
+            } else {
+                data.recipes.push({ id: Date.now(), title, diet, category, ingredients, instructions, image });
+            }
             saveData();
             closeModal('recipe-modal');
         }
@@ -951,34 +1058,38 @@
         // Rezept-Zutaten Modal öffnen
         window.openRecipeShopModal = function(recipeId) {
             const recipe = (data.recipes || []).find(r => r.id === recipeId);
-            if (!recipe || !recipe.ingredients) {
+            if (!recipe || !recipe.ingredients || recipe.ingredients.length === 0) {
                 alert('Dieses Rezept hat keine Zutaten.');
                 return;
             }
-            showIngredientSelectionModal(recipe.title, recipe.ingredients);
+            let list = recipe.ingredients.map(ing => `${ing.amount} ${ing.unit} ${ing.name}`.replace(/\s+/g, ' ').trim());
+            showIngredientSelectionModal(recipe.title, list);
         };
 
-        // Menü-Zutaten Modal öffnen (nutzt Notizen / Zutaten aus dem geplanten Essen)
+        // Menü-Zutaten Modal öffnen
         window.openMealShopModal = function(mealId) {
             const meal = (data.meals || []).find(m => m.id === mealId);
             if (!meal) return;
             
-            // Text zum Parsen: Entweder die Zutaten/Notiz oder der Name des Gerichts
-            const textToParse = meal.desc ? `${meal.title}\n${meal.desc}` : meal.title;
-            showIngredientSelectionModal(meal.title, textToParse);
+            let list = [];
+            if (meal.recipeId) {
+                const recipe = (data.recipes || []).find(r => r.id === meal.recipeId);
+                if (recipe && recipe.ingredients) {
+                    list = recipe.ingredients.map(ing => `${ing.amount} ${ing.unit} ${ing.name}`.replace(/\s+/g, ' ').trim());
+                }
+            }
+            if (list.length === 0 && meal.desc) {
+                list = meal.desc.split(/\r?\n|,|;/).map(s => s.trim()).filter(Boolean);
+            }
+            if (list.length === 0) {
+                list = [meal.title];
+            }
+            showIngredientSelectionModal(meal.title, list);
         };
 
-        function showIngredientSelectionModal(title, ingredientsText) {
+        function showIngredientSelectionModal(title, ingredientsList) {
             document.getElementById('recipe-shop-modal-title').textContent = `Zutaten für "${title}"`;
             
-            // Zutaten aufteilen nach Zeilen oder Kommas
-            let rawLines = ingredientsText.split(/\r?\n|,|;/);
-            let ingredientsList = [];
-            rawLines.forEach(line => {
-                let trimmed = line.trim();
-                if (trimmed) ingredientsList.push(trimmed);
-            });
-
             const container = document.getElementById('recipe-shop-ingredients-container');
             if (ingredientsList.length === 0) {
                 container.innerHTML = `<div class="text-xs text-slate-400 italic">Keine Zutaten gefunden.</div>`;
@@ -1426,37 +1537,78 @@
                 container.innerHTML = `<div class="text-center py-12 text-slate-400 dark:text-slate-500 text-sm bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">Noch keine Rezepte gespeichert.</div>`;
                 return;
             }
-            container.innerHTML = data.recipes.map(recipe => `
-                <div class="bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 rounded-2xl p-4 shadow-sm space-y-3">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                            <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-0.5 rounded-full">${recipe.category}</span>
-                            <h4 class="font-bold text-sm text-slate-900 dark:text-white">${recipe.title}</h4>
-                        </div>
-                        <div class="flex items-center space-x-1">
-                            <button onclick="openRecipeShopModal(${recipe.id})" title="Zutaten auf Einkaufsliste" class="text-slate-400 hover:text-emerald-600 p-2 cursor-pointer"><i class="fa-solid fa-cart-plus text-sm"></i></button>
-                            <button onclick="deleteRecipe(${recipe.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer"><i class="fa-solid fa-trash-can text-sm"></i></button>
-                        </div>
-                    </div>
-                    ${recipe.image ? `
-                        <div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
-                            <img src="${recipe.image}" alt="${recipe.title}" class="w-full h-40 object-cover">
-                        </div>
-                    ` : ''}
-                    ${recipe.ingredients ? `
-                        <div class="bg-white dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/60 text-xs space-y-1">
-                            <span class="font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[10px]">Zutaten:</span>
-                            <p class="text-slate-700 dark:text-slate-300 whitespace-pre-line">${recipe.ingredients}</p>
-                        </div>
-                    ` : ''}
-                    ${recipe.instructions ? `
-                        <div class="text-xs space-y-0.5 text-slate-600 dark:text-slate-300">
-                            <span class="font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[10px]">Zubereitung:</span>
-                            <p class="whitespace-pre-line">${recipe.instructions}</p>
-                        </div>
-                    ` : ''}
-                </div>
-            `).join('');
+
+            const groups = {
+                'Vegetarisch': data.recipes.filter(r => r.diet === 'Vegetarisch' || !r.diet),
+                'Nicht vegetarisch': data.recipes.filter(r => r.diet === 'Nicht vegetarisch')
+            };
+
+            let html = '';
+            ['Vegetarisch', 'Nicht vegetarisch'].forEach(groupName => {
+                const groupRecipes = groups[groupName];
+                if (groupRecipes && groupRecipes.length > 0) {
+                    const badgeColor = groupName === 'Vegetarisch' ? 'bg-emerald-500' : 'bg-rose-500';
+                    html += `
+                        <div class="space-y-3">
+                            <div class="flex items-center space-x-2 border-b border-slate-200 dark:border-slate-800 pb-2 pt-1">
+                                <span class="w-2.5 h-2.5 rounded-full ${badgeColor}"></span>
+                                <h4 class="font-extrabold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-400">${groupName} (${groupRecipes.length})</h4>
+                            </div>
+                            <div class="space-y-3">
+                    `;
+
+                    groupRecipes.forEach(recipe => {
+                        let ingredientsHtml = '';
+                        if (Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0) {
+                            ingredientsHtml = recipe.ingredients.map(ing => `
+                                <li class="flex items-center justify-between py-0.5 border-b border-slate-100 dark:border-slate-800/50 last:border-none">
+                                    <span class="font-medium text-slate-800 dark:text-slate-200">${ing.name || ''}</span>
+                                    <span class="text-slate-500 dark:text-slate-400 font-semibold">${ing.amount || ''} ${ing.unit || ''}</span>
+                                </li>
+                            `).join('');
+                        } else if (typeof recipe.ingredients === 'string') {
+                            ingredientsHtml = `<li class="text-slate-700 dark:text-slate-300 whitespace-pre-line">${recipe.ingredients}</li>`;
+                        }
+
+                        html += `
+                            <div class="bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 rounded-2xl p-4 shadow-sm space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-0.5 rounded-full">${recipe.category}</span>
+                                        <h4 class="font-bold text-sm text-slate-900 dark:text-white">${recipe.title}</h4>
+                                    </div>
+                                    <div class="flex items-center space-x-1">
+                                        <button onclick="openRecipeShopModal(${recipe.id})" title="Zutaten auf Einkaufsliste" class="text-slate-400 hover:text-emerald-600 p-2 cursor-pointer"><i class="fa-solid fa-cart-plus text-sm"></i></button>
+                                        <button onclick="openRecipeModalForEdit(${recipe.id})" title="Rezept bearbeiten" class="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-2 cursor-pointer transition"><i class="fa-solid fa-pen text-sm"></i></button>
+                                        <button onclick="deleteRecipe(${recipe.id})" title="Rezept löschen" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                                    </div>
+                                </div>
+                                ${recipe.image ? `
+                                    <div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+                                        <img src="${recipe.image}" alt="${recipe.title}" class="w-full h-40 object-cover">
+                                    </div>
+                                ` : ''}
+                                ${ingredientsHtml ? `
+                                    <div class="bg-white dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/60 text-xs space-y-1">
+                                        <span class="font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[10px]">Zutaten:</span>
+                                        <ul class="space-y-1 pt-1">${ingredientsHtml}</ul>
+                                    </div>
+                                ` : ''}
+                                ${recipe.instructions ? `
+                                    <div class="text-xs space-y-0.5 text-slate-600 dark:text-slate-300">
+                                        <span class="font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[10px]">Zubereitung:</span>
+                                        <p class="whitespace-pre-line">${recipe.instructions}</p>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    });
+
+                    html += `</div></div>`;
+                }
+            });
+
+            container.innerHTML = html;
         }
 
         // Start beim Laden
