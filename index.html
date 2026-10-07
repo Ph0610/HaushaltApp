@@ -47,9 +47,12 @@
         
         <!-- Header -->
         <header class="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
-            <div>
-                <span id="sync-status" class="text-[10px] font-bold text-amber-500 uppercase tracking-widest"><i class="fa-solid fa-circle-notch fa-spin"></i> Verbinde...</span>
-                <h2 id="display-household" class="text-base font-bold text-slate-900 dark:text-white"></h2>
+            <div class="flex items-center space-x-2">
+                <div>
+                    <span id="sync-status" class="text-[10px] font-bold text-amber-500 uppercase tracking-widest"><i class="fa-solid fa-circle-notch fa-spin"></i> Verbinde...</span>
+                    <h2 id="display-household" class="text-base font-bold text-slate-900 dark:text-white"></h2>
+                </div>
+                <button onclick="manualSync()" class="text-xs text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1.5 cursor-pointer" title="Manuell synchronisieren"><i class="fa-solid fa-rotate" id="sync-icon"></i></button>
             </div>
             <div class="flex items-center space-x-2">
                 <!-- Dark Mode Umschalter -->
@@ -161,7 +164,7 @@
     <!-- MODALS -->
     <div id="calendar-modal" class="modal hidden fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
         <div class="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-slate-900 dark:text-slate-100">
-            <h3 class="text-base font-bold text-slate-900 dark:text-white">Neuen Termin hinzufügen</h3>
+            <h3 id="calendar-modal-title" class="text-base font-bold text-slate-900 dark:text-white">Neuen Termin hinzufügen</h3>
             <div class="space-y-3">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Titel</label>
@@ -341,6 +344,7 @@
         let currentCalendarDate = new Date();
         let calendarViewMode = 'month';
         let selectedDayStr = getLocalDateString();
+        let editingCalendarId = null; // Speichert ID, falls ein Termin bearbeitet wird
 
         function getStorageKey() {
             return 'household_data_' + (currentHousehold ? currentHousehold.trim().toLowerCase() : 'default');
@@ -372,9 +376,30 @@
                     senderId: clientId,
                     payload: data
                 };
-                mqttClient.publish(topic, JSON.stringify(messageObj), { retain: true });
+                mqttClient.publish(topic, JSON.stringify(messageObj), { qos: 0, retain: true }, (err) => {
+                    if (!err) {
+                        const statusEl = document.getElementById('sync-status');
+                        if (statusEl) statusEl.innerHTML = '<i class="fa-solid fa-cloud text-emerald-600"></i> Gesendet';
+                    }
+                });
             }
         }
+
+        window.manualSync = function() {
+            loadLocalData();
+            if (mqttClient && mqttClient.connected && currentHousehold) {
+                const topic = 'haushalt_sync_2026_' + currentHousehold.trim().toLowerCase();
+                const messageObj = {
+                    senderId: clientId,
+                    payload: data
+                };
+                mqttClient.publish(topic, JSON.stringify(messageObj), { qos: 0, retain: true }, () => {
+                    alert('Daten wurden manuell an den Haushalt gesendet!');
+                });
+            } else {
+                alert('Keine aktive Verbindung zum Server.');
+            }
+        };
 
         function initMQTT() {
             if (!currentHousehold) return;
@@ -382,7 +407,12 @@
             const statusEl = document.getElementById('sync-status');
             if (statusEl) statusEl.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verbinde Live...';
 
-            mqttClient = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
+            mqttClient = mqtt.connect('wss://broker.hivemq.com:8884/mqtt', {
+                clientId: 'haushalt_mgr_' + Math.random().toString(36).substring(2, 9),
+                clean: true,
+                reconnectPeriod: 2000
+            });
+
             const topic = 'haushalt_sync_2026_' + currentHousehold.trim().toLowerCase();
 
             mqttClient.on('connect', () => {
@@ -407,6 +437,9 @@
                             data = remoteData;
                             safeStorage.setItem(getStorageKey(), JSON.stringify(data));
                             renderAll();
+                            
+                            const statusEl = document.getElementById('sync-status');
+                            if (statusEl) statusEl.innerHTML = '<i class="fa-solid fa-cloud text-emerald-600"></i> Empfangen!';
                         }
                     } catch(e) {}
                 }
@@ -414,6 +447,10 @@
 
             mqttClient.on('error', () => {
                 if (statusEl) statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-amber-600"></i> Lokal (Offline)';
+            });
+
+            mqttClient.on('offline', () => {
+                if (statusEl) statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-amber-600"></i> Getrennt';
             });
         }
 
@@ -528,7 +565,32 @@
         };
 
         window.openModalForDate = function(dateStr) {
+            editingCalendarId = null;
+            document.getElementById('calendar-modal-title').textContent = 'Neuen Termin hinzufügen';
+            document.getElementById('cal-title').value = '';
             document.getElementById('cal-date').value = dateStr || selectedDayStr || getLocalDateString();
+            document.getElementById('cal-time').value = '';
+            document.getElementById('cal-category').value = 'Termin';
+            document.getElementById('cal-color').value = '#e11d48';
+            document.getElementById('cal-recurrence').value = 'none';
+            document.getElementById('cal-desc').value = '';
+            openModal('calendar-modal');
+        };
+
+        window.openModalForEdit = function(id) {
+            const item = data.calendar.find(c => c.id === id);
+            if (!item) return;
+
+            editingCalendarId = id;
+            document.getElementById('calendar-modal-title').textContent = 'Termin bearbeiten';
+            document.getElementById('cal-title').value = item.title || '';
+            document.getElementById('cal-date').value = item.date || getLocalDateString();
+            document.getElementById('cal-time').value = item.time || '';
+            document.getElementById('cal-category').value = item.category || 'Termin';
+            document.getElementById('cal-color').value = item.color || '#e11d48';
+            document.getElementById('cal-recurrence').value = item.recurrence || 'none';
+            document.getElementById('cal-desc').value = item.desc || '';
+            
             openModal('calendar-modal');
         };
 
@@ -544,7 +606,23 @@
             if (!title) { alert('Bitte einen Titel eingeben.'); return; }
             if (!date) { alert('Bitte ein Datum wählen.'); return; }
 
-            data.calendar.push({ id: Date.now(), title, date, time, category, color, recurrence, desc });
+            if (editingCalendarId) {
+                // Bestehenden Termin aktualisieren
+                const item = data.calendar.find(c => c.id === editingCalendarId);
+                if (item) {
+                    item.title = title;
+                    item.date = date;
+                    item.time = time;
+                    item.category = category;
+                    item.color = color;
+                    item.recurrence = recurrence;
+                    item.desc = desc;
+                }
+                editingCalendarId = null;
+            } else  {
+                // Neuen Termin hinzufügen
+                data.calendar.push({ id: Date.now(), title, date, time, category, color, recurrence, desc });
+            }
             
             selectedDayStr = date;
             const parts = date.split('-');
@@ -552,10 +630,6 @@
 
             saveData();
             closeModal('calendar-modal');
-            
-            document.getElementById('cal-title').value = '';
-            document.getElementById('cal-time').value = '';
-            document.getElementById('cal-desc').value = '';
         };
 
         window.saveTask = function() {
@@ -720,7 +794,7 @@
                                 <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">Termine im Monat</h4>
                                 <span class="font-bold text-slate-900 dark:text-white text-sm"><i class="fa-regular fa-calendar-days mr-1.5 text-rose-600"></i>${monthNames[month]} ${year}</span>
                             </div>
-                            <button onclick="openModalForDate('${selectedDayStr}')" class="bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer">
+                            <button onclick="openModalForDate('')" class="bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer">
                                 <i class="fa-solid fa-plus mr-1"></i> Termin
                             </button>
                         </div>
@@ -746,7 +820,10 @@
                                     </div>
                                     ${item.desc ? `<p class="text-xs text-slate-600 dark:text-slate-300 italic pt-0.5"><i class="fa-regular fa-note-sticky mr-1"></i>${item.desc}</p>` : ''}
                                 </div>
-                                <button onclick="deleteCalendar(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer transition"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                                <div class="flex items-center space-x-1">
+                                    <button onclick="openModalForEdit(${item.id})" class="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-2 cursor-pointer transition" title="Bearbeiten"><i class="fa-solid fa-pen text-sm"></i></button>
+                                    <button onclick="deleteCalendar(${item.id})" class="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-2 cursor-pointer transition" title="Löschen"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                                </div>
                             </div>
                         `;
                     }).join('') + `</div>`;
@@ -783,7 +860,10 @@
                                 </div>
                                 ${item.desc ? `<p class="text-xs text-slate-600 dark:text-slate-300 italic pt-0.5"><i class="fa-regular fa-note-sticky mr-1"></i>${item.desc}</p>` : ''}
                             </div>
-                            <button onclick="deleteCalendar(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer transition"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                            <div class="flex items-center space-x-1">
+                                <button onclick="openModalForEdit(${item.id})" class="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-2 cursor-pointer transition" title="Bearbeiten"><i class="fa-solid fa-pen text-sm"></i></button>
+                                <button onclick="deleteCalendar(${item.id})" class="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-2 cursor-pointer transition" title="Löschen"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                            </div>
                         </div>
                     `;
                 }).join('');
