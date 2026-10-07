@@ -143,25 +143,43 @@
                 <div id="shopping-list" class="space-y-3"></div>
             </section>
 
+            <!-- TAB 5: ESSENPLANUNG -->
+            <section id="tab-meals" class="tab-content hidden p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Essen & Menüplan</h3>
+                        <p class="text-xs text-slate-400 dark:text-slate-400">Gemeinsame Kochplanung</p>
+                    </div>
+                    <button onclick="openModal('meal-modal')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
+                        <i class="fa-solid fa-plus mr-1"></i> Gericht
+                    </button>
+                </div>
+                <div id="meal-list" class="space-y-3"></div>
+            </section>
+
         </main>
 
-        <!-- Untere Navigation -->
-        <nav class="absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 px-4 py-2.5 flex justify-around items-center z-20 shadow-lg">
+        <!-- Untere Navigation (5 Reiter) -->
+        <nav class="absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 px-2 py-2.5 flex justify-around items-center z-20 shadow-lg">
             <button onclick="switchTab('calendar')" class="nav-btn flex flex-col items-center text-rose-600 dark:text-rose-400 cursor-pointer p-1" data-tab="calendar">
-                <i class="fa-solid fa-calendar-days text-lg"></i>
-                <span class="text-[10px] font-semibold mt-1">Kalender</span>
+                <i class="fa-solid fa-calendar-days text-base"></i>
+                <span class="text-[9px] font-semibold mt-1">Kalender</span>
             </button>
             <button onclick="switchTab('tasks')" class="nav-btn flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer p-1" data-tab="tasks">
-                <i class="fa-solid fa-list-check text-lg"></i>
-                <span class="text-[10px] font-semibold mt-1">Aufgaben</span>
+                <i class="fa-solid fa-list-check text-base"></i>
+                <span class="text-[9px] font-semibold mt-1">Aufgaben</span>
             </button>
             <button onclick="switchTab('inventory')" class="nav-btn flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer p-1" data-tab="inventory">
-                <i class="fa-solid fa-boxes-stacked text-lg"></i>
-                <span class="text-[10px] font-semibold mt-1">Vorrat</span>
+                <i class="fa-solid fa-boxes-stacked text-base"></i>
+                <span class="text-[9px] font-semibold mt-1">Vorrat</span>
             </button>
             <button onclick="switchTab('shopping')" class="nav-btn flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer p-1" data-tab="shopping">
-                <i class="fa-solid fa-cart-shopping text-lg"></i>
-                <span class="text-[10px] font-semibold mt-1">Einkauf</span>
+                <i class="fa-solid fa-cart-shopping text-base"></i>
+                <span class="text-[9px] font-semibold mt-1">Einkauf</span>
+            </button>
+            <button onclick="switchTab('meals')" class="nav-btn flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer p-1" data-tab="meals">
+                <i class="fa-solid fa-utensils text-base"></i>
+                <span class="text-[9px] font-semibold mt-1">Essen</span>
             </button>
         </nav>
     </div>
@@ -299,6 +317,41 @@
         </div>
     </div>
 
+    <!-- MEAL MODAL -->
+    <div id="meal-modal" class="modal hidden fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-slate-900 dark:text-slate-100">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Gericht zum Menüplan hinzufügen</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Gericht / Rezept</label>
+                    <input type="text" id="meal-title" placeholder="z.B. Spaghetti Bolognese" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Datum</label>
+                        <input type="date" id="meal-date" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Mahlzeit</label>
+                        <select id="meal-type" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                            <option value="Mittagessen">Mittagessen</option>
+                            <option value="Abendessen">Abendessen</option>
+                            <option value="Frühstück / Snack">Frühstück / Snack</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Zutaten / Notiz (opt.)</label>
+                    <input type="text" id="meal-desc" placeholder="z.B. Hackfleisch, Tomaten, Nudeln" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                </div>
+                <div class="flex space-x-3 pt-2">
+                    <button onclick="closeModal('meal-modal')" class="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
+                    <button onclick="saveMeal()" class="flex-1 py-2.5 bg-rose-600 text-white font-semibold rounded-xl text-sm shadow-md cursor-pointer">Speichern</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ECHTZEIT MQTT SYNCHRONISATIONS-LOGIK & PWA -->
     <script>
         if ('serviceWorker' in navigator) {
@@ -356,7 +409,7 @@
         const clientId = 'client_' + Math.random().toString(36).substring(2, 9);
 
         let currentHousehold = safeStorage.getItem('household_code') || '';
-        let data = { calendar: [], tasks: [], inventory: [], shopping: [] };
+        let data = { calendar: [], tasks: [], inventory: [], shopping: [], meals: [] };
         const categories = ['Vorratskammer', 'Kühlschrank & Tiefkühler', 'Bad & Drogerie', 'Haushalt & Sonstiges'];
         let mqttClient = null;
 
@@ -374,11 +427,12 @@
                 const saved = safeStorage.getItem(getStorageKey());
                 if (saved) {
                     data = JSON.parse(saved);
+                    if (!data.meals) data.meals = [];
                 } else {
-                    data = { calendar: [], tasks: [], inventory: [], shopping: [] };
+                    data = { calendar: [], tasks: [], inventory: [], shopping: [], meals: [] };
                 }
             } catch (e) {
-                data = { calendar: [], tasks: [], inventory: [], shopping: [] };
+                data = { calendar: [], tasks: [], inventory: [], shopping: [], meals: [] };
             }
             renderAll();
         }
@@ -505,6 +559,7 @@
                                 });
                             }
                             data = remoteData;
+                            if (!data.meals) data.meals = [];
                             safeStorage.setItem(getStorageKey(), JSON.stringify(data));
                             renderAll();
                             
@@ -607,7 +662,14 @@
             }
         };
 
-        window.openModal = function(id) { document.getElementById(id).classList.remove('hidden'); };
+        window.openModal = function(id) {
+            if (id === 'meal-modal') {
+                document.getElementById('meal-date').value = getLocalDateString();
+                document.getElementById('meal-title').value = '';
+                document.getElementById('meal-desc').value = '';
+            }
+            document.getElementById(id).classList.remove('hidden');
+        };
         window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); };
 
         window.setCalendarView = function(view) {
@@ -744,6 +806,27 @@
             document.getElementById('shop-title').value = '';
         };
 
+        window.saveMeal = function() {
+            const title = document.getElementById('meal-title').value.trim();
+            const date = document.getElementById('meal-date').value;
+            const type = document.getElementById('meal-type').value;
+            const desc = document.getElementById('meal-desc').value.trim();
+            if (!title) { alert('Bitte ein Gericht eingeben.'); return; }
+            if (!date) { alert('Bitte ein Datum wählen.'); return; }
+            if (!data.meals) data.meals = [];
+            data.meals.push({ id: Date.now(), title, date, type, desc });
+            data.meals.sort((a, b) => a.date > b.date ? 1 : -1);
+            saveData();
+            closeModal('meal-modal');
+        };
+
+        window.addMealToShopping = function(title) {
+            if (!data.shopping) data.shopping = [];
+            data.shopping.push({ id: Date.now(), title: title, completed: false });
+            saveData();
+            alert('"' + title + '" wurde zur Einkaufsliste hinzugefügt!');
+        };
+
         window.toggleTask = function(id) {
             const task = data.tasks.find(t => t.id === id);
             if (task) { task.completed = !task.completed; saveData(); }
@@ -753,6 +836,7 @@
         window.deleteCalendar = function(id) { data.calendar = data.calendar.filter(c => c.id !== id); saveData(); };
         window.deleteInventory = function(id) { data.inventory = data.inventory.filter(i => i.id !== id); saveData(); };
         window.deleteShopping = function(id) { data.shopping = data.shopping.filter(s => s.id !== id); saveData(); };
+        window.deleteMeal = function(id) { data.meals = (data.meals || []).filter(m => m.id !== id); saveData(); };
 
         window.toggleShopping = function(id) {
             const item = data.shopping.find(s => s.id === id);
@@ -856,7 +940,7 @@
                     const instDate = new Date(itemYear, itemMonth, itemDay);
                     const instEndDate = item.endDate ? new Date(item.endDate) : instDate;
 
-                    if (instEndDate >= targetStart && instDate <= targetEnd) {
+                    if (instEndDate >= targetStart && instEndDate <= targetEnd) {
                         let d = new Date(Math.max(instDate, targetStart));
                         const maxD = new Date(Math.min(instEndDate, targetEnd));
                         while (d <= maxD) {
@@ -871,7 +955,7 @@
             return events;
         }
 
-        function renderAll() { renderCalendar(); renderTasks(); renderInventory(); renderShopping(); }
+        function renderAll() { renderCalendar(); renderTasks(); renderInventory(); renderShopping(); renderMeals(); }
 
         function renderCalendar() {
             const container = document.getElementById('calendar-content-container');
@@ -942,7 +1026,6 @@
                 if (monthEvents.length === 0) {
                     listHtml += `<div class="text-center py-6 text-slate-400 dark:text-slate-500 text-xs italic">Keine Termine in diesem Monat.</div>`;
                 } else {
-                    // Unique events for the list view in this month
                     const seenIds = new Set();
                     const uniqueMonthEvents = monthEvents.filter(item => {
                         if (seenIds.has(item.id)) return false;
@@ -1082,6 +1165,31 @@
                         <span class="font-medium text-sm ${item.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}">${item.title}</span>
                     </div>
                     <button onclick="deleteShopping(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function renderMeals() {
+            const container = document.getElementById('meal-list');
+            if (!container) return;
+            if (!data.meals || data.meals.length === 0) { 
+                container.innerHTML = `<div class="text-center py-12 text-slate-400 dark:text-slate-500 text-sm bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">Keine Gerichte geplant.</div>`; 
+                return; 
+            }
+            container.innerHTML = data.meals.map(item => `
+                <div class="bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 rounded-2xl p-4 shadow-sm flex items-center justify-between space-x-3">
+                    <div class="space-y-1 flex-1">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-0.5 rounded-full">${item.type}</span>
+                            <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400"><i class="fa-regular fa-calendar mr-1"></i>${item.date}</span>
+                        </div>
+                        <h4 class="font-bold text-sm text-slate-800 dark:text-slate-200">${item.title}</h4>
+                        ${item.desc ? `<p class="text-xs text-slate-500 dark:text-slate-400 italic">${item.desc}</p>` : ''}
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <button onclick="addMealToShopping('${item.title.replace(/'/g, "\\'")}')" title="Zutaten auf Einkaufsliste setzen" class="text-slate-400 hover:text-emerald-600 p-2 cursor-pointer"><i class="fa-solid fa-cart-plus text-sm"></i></button>
+                        <button onclick="deleteMeal(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                    </div>
                 </div>
             `).join('');
         }
