@@ -71,8 +71,47 @@
         <!-- Hauptinhalt (Tabs) -->
         <main class="flex-1 pb-28 overflow-y-auto">
             
+            <!-- TAB 0: DASHBOARD (STARTSEITE) -->
+            <section id="tab-dashboard" class="tab-content p-6 space-y-5">
+                <div class="bg-gradient-to-br from-rose-500 to-rose-700 text-white rounded-3xl p-5 shadow-lg space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span id="dashboard-date" class="text-xs font-medium uppercase tracking-wider text-rose-100">Heute</span>
+                        <span class="bg-white/25 px-2.5 py-0.5 rounded-full text-[10px] font-bold"><i class="fa-solid fa-house-user mr-1"></i> Aktiv</span>
+                    </div>
+                    <h3 class="text-xl font-extrabold" id="dashboard-greeting">Hallo ihr beiden! 👋</h3>
+                    <p class="text-xs text-rose-100">Hier ist euer Überblick für den heutigen Tag im gemeinsamen Haushalt.</p>
+                </div>
+
+                <!-- Heute auf dem Tisch -->
+                <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-4 space-y-3 shadow-sm">
+                    <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700 pb-2">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"><i class="fa-solid fa-utensils mr-1.5 text-rose-600"></i>Heutiges Menü</h4>
+                        <button onclick="switchTab('meals')" class="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline">Alle anzeigen</button>
+                    </div>
+                    <div id="dashboard-meals-container" class="space-y-2"></div>
+                </div>
+
+                <!-- Heutige Termine -->
+                <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-4 space-y-3 shadow-sm">
+                    <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700 pb-2">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"><i class="fa-regular fa-calendar-days mr-1.5 text-rose-600"></i>Termine heute</h4>
+                        <button onclick="switchTab('calendar')" class="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline">Zum Kalender</button>
+                    </div>
+                    <div id="dashboard-calendar-container" class="space-y-2"></div>
+                </div>
+
+                <!-- Offene Aufgaben -->
+                <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-4 space-y-3 shadow-sm">
+                    <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700 pb-2">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"><i class="fa-solid fa-list-check mr-1.5 text-rose-600"></i>Offene Aufgaben</h4>
+                        <button onclick="switchTab('tasks')" class="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline">Alle Aufgaben</button>
+                    </div>
+                    <div id="dashboard-tasks-container" class="space-y-2"></div>
+                </div>
+            </section>
+
             <!-- TAB 1: KALENDER -->
-            <section id="tab-calendar" class="tab-content p-6 space-y-4">
+            <section id="tab-calendar" class="tab-content hidden p-6 space-y-4">
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-lg font-bold text-slate-900 dark:text-white">Gemeinsamer Kalender</h3>
@@ -121,18 +160,7 @@
                 <div id="task-list" class="space-y-3"></div>
             </section>
 
-            <!-- TAB 3: VORRAT -->
-            <section id="tab-inventory" class="tab-content hidden p-6 space-y-4">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Vorrat nach Themen</h3>
-                    <button onclick="openModal('inventory-modal')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
-                        <i class="fa-solid fa-plus mr-1"></i> Vorrat
-                    </button>
-                </div>
-                <div id="inventory-container" class="space-y-6"></div>
-            </section>
-
-            <!-- TAB 4: EINKAUFSLISTE -->
+            <!-- TAB 3: EINKAUFSLISTE -->
             <section id="tab-shopping" class="tab-content hidden p-6 space-y-4">
                 <div class="flex items-center justify-between">
                     <h3 class="text-lg font-bold text-slate-900 dark:text-white">Einkaufsliste</h3>
@@ -143,7 +171,7 @@
                 <div id="shopping-list" class="space-y-3"></div>
             </section>
 
-            <!-- TAB 5: ESSENPLANUNG -->
+            <!-- TAB 4: ESSENPLANUNG -->
             <section id="tab-meals" class="tab-content hidden p-6 space-y-4">
                 <div class="flex items-center justify-between">
                     <div>
@@ -157,29 +185,47 @@
                 <div id="meal-list" class="space-y-3"></div>
             </section>
 
+            <!-- TAB 5: REZEPTE -->
+            <section id="tab-recipes" class="tab-content hidden p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Digitales Rezeptbuch</h3>
+                        <p class="text-xs text-slate-400 dark:text-slate-400">Eure Lieblingsgerichte & Zutaten</p>
+                    </div>
+                    <button onclick="openModal('recipe-modal')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
+                        <i class="fa-solid fa-plus mr-1"></i> Rezept
+                    </button>
+                </div>
+                <div id="recipe-list" class="space-y-3"></div>
+            </section>
+
         </main>
 
-        <!-- Untere Navigation (5 Reiter) -->
-        <nav class="absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 px-2 py-2.5 flex justify-around items-center z-20 shadow-lg">
-            <button onclick="switchTab('calendar')" class="nav-btn flex flex-col items-center text-rose-600 dark:text-rose-400 cursor-pointer p-1" data-tab="calendar">
+        <!-- Untere Navigation (6 Reiter) -->
+        <nav class="absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 px-1 py-2 grid grid-cols-6 items-center z-20 shadow-lg">
+            <button onclick="switchTab('dashboard')" class="nav-btn flex flex-col items-center text-rose-600 dark:text-rose-400 cursor-pointer p-1" data-tab="dashboard">
+                <i class="fa-solid fa-house text-base"></i>
+                <span class="text-[8px] font-semibold mt-1">Start</span>
+            </button>
+            <button onclick="switchTab('calendar')" class="nav-btn flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer p-1" data-tab="calendar">
                 <i class="fa-solid fa-calendar-days text-base"></i>
-                <span class="text-[9px] font-semibold mt-1">Kalender</span>
+                <span class="text-[8px] font-semibold mt-1">Kalender</span>
             </button>
             <button onclick="switchTab('tasks')" class="nav-btn flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer p-1" data-tab="tasks">
                 <i class="fa-solid fa-list-check text-base"></i>
-                <span class="text-[9px] font-semibold mt-1">Aufgaben</span>
-            </button>
-            <button onclick="switchTab('inventory')" class="nav-btn flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer p-1" data-tab="inventory">
-                <i class="fa-solid fa-boxes-stacked text-base"></i>
-                <span class="text-[9px] font-semibold mt-1">Vorrat</span>
+                <span class="text-[8px] font-semibold mt-1">Aufgaben</span>
             </button>
             <button onclick="switchTab('shopping')" class="nav-btn flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer p-1" data-tab="shopping">
                 <i class="fa-solid fa-cart-shopping text-base"></i>
-                <span class="text-[9px] font-semibold mt-1">Einkauf</span>
+                <span class="text-[8px] font-semibold mt-1">Einkauf</span>
             </button>
             <button onclick="switchTab('meals')" class="nav-btn flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer p-1" data-tab="meals">
                 <i class="fa-solid fa-utensils text-base"></i>
-                <span class="text-[9px] font-semibold mt-1">Essen</span>
+                <span class="text-[8px] font-semibold mt-1">Essen</span>
+            </button>
+            <button onclick="switchTab('recipes')" class="nav-btn flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer p-1" data-tab="recipes">
+                <i class="fa-solid fa-book-open text-base"></i>
+                <span class="text-[8px] font-semibold mt-1">Rezepte</span>
             </button>
         </nav>
     </div>
@@ -276,31 +322,6 @@
         </div>
     </div>
 
-    <div id="inventory-modal" class="modal hidden fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-slate-900 dark:text-slate-100">
-            <h3 class="text-base font-bold text-slate-900 dark:text-white">Vorrat hinzufügen</h3>
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Artikel</label>
-                    <input type="text" id="inv-title" placeholder="z.B. Olivenöl" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Kategorie</label>
-                    <select id="inv-category" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
-                        <option value="Vorratskammer">Vorratskammer</option>
-                        <option value="Kühlschrank & Tiefkühler">Kühlschrank & Tiefkühler</option>
-                        <option value="Bad & Drogerie">Bad & Drogerie</option>
-                        <option value="Haushalt & Sonstiges">Haushalt & Sonstiges</option>
-                    </select>
-                </div>
-                <div class="flex space-x-3 pt-2">
-                    <button onclick="closeModal('inventory-modal')" class="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
-                    <button onclick="saveInventory()" class="flex-1 py-2.5 bg-rose-600 text-white font-semibold rounded-xl text-sm shadow-md cursor-pointer">Speichern</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div id="shopping-modal" class="modal hidden fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
         <div class="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-slate-900 dark:text-slate-100">
             <h3 class="text-base font-bold text-slate-900 dark:text-white">Artikel einkaufen</h3>
@@ -347,6 +368,35 @@
                 <div class="flex space-x-3 pt-2">
                     <button onclick="closeModal('meal-modal')" class="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
                     <button onclick="saveMeal()" class="flex-1 py-2.5 bg-rose-600 text-white font-semibold rounded-xl text-sm shadow-md cursor-pointer">Speichern</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RECIPE MODAL -->
+    <div id="recipe-modal" class="modal hidden fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-slate-900 dark:text-slate-100 max-h-[90vh] overflow-y-auto">
+            Neues Rezept hinzufügen
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Rezept-Titel</label>
+                    <input type="text" id="recipe-title" placeholder="z.B. Cremige Tomatensuppe" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Kategorie</label>
+                    <input type="text" id="recipe-category" placeholder="z.B. Hauptgericht" value="Hauptgericht" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Zutaten (jede Zeile eine Zutat)</label>
+                    <textarea id="recipe-ingredients" rows="3" placeholder="500g Tomaten&#10;1 Zwiebel&#10;200ml Sahne" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Zubereitung (opt.)</label>
+                    <textarea id="recipe-instructions" rows="3" placeholder="Zwiebeln anbraten, Tomaten dazu..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100"></textarea>
+                </div>
+                <div class="flex space-x-3 pt-2">
+                    <button onclick="closeModal('recipe-modal')" class="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold rounded-xl text-sm cursor-pointer">Abbrechen</button>
+                    <button onclick="saveRecipe()" class="flex-1 py-2.5 bg-rose-600 text-white font-semibold rounded-xl text-sm shadow-md cursor-pointer">Speichern</button>
                 </div>
             </div>
         </div>
@@ -409,8 +459,7 @@
         const clientId = 'client_' + Math.random().toString(36).substring(2, 9);
 
         let currentHousehold = safeStorage.getItem('household_code') || '';
-        let data = { calendar: [], tasks: [], inventory: [], shopping: [], meals: [] };
-        const categories = ['Vorratskammer', 'Kühlschrank & Tiefkühler', 'Bad & Drogerie', 'Haushalt & Sonstiges'];
+        let data = { calendar: [], tasks: [], shopping: [], meals: [], recipes: [] };
         let mqttClient = null;
 
         let currentCalendarDate = new Date();
@@ -428,11 +477,15 @@
                 if (saved) {
                     data = JSON.parse(saved);
                     if (!data.meals) data.meals = [];
+                    if (!data.recipes) data.recipes = [];
+                    if (!data.shopping) data.shopping = [];
+                    if (!data.tasks) data.tasks = [];
+                    if (!data.calendar) data.calendar = [];
                 } else {
-                    data = { calendar: [], tasks: [], inventory: [], shopping: [], meals: [] };
+                    data = { calendar: [], tasks: [], shopping: [], meals: [], recipes: [] };
                 }
             } catch (e) {
-                data = { calendar: [], tasks: [], inventory: [], shopping: [], meals: [] };
+                data = { calendar: [], tasks: [], shopping: [], meals: [], recipes: [] };
             }
             renderAll();
         }
@@ -474,7 +527,7 @@
             }
         };
 
-        // ICS Export mit voller Unterstützung für End-Zeiten, Mehrtägigkeit und Wiederholungs-Enden
+        // ICS Export
         window.exportToICS = function() {
             if (!data.calendar || data.calendar.length === 0) {
                 alert('Keine Termine zum Exportieren vorhanden.');
@@ -560,6 +613,7 @@
                             }
                             data = remoteData;
                             if (!data.meals) data.meals = [];
+                            if (!data.recipes) data.recipes = [];
                             safeStorage.setItem(getStorageKey(), JSON.stringify(data));
                             renderAll();
                             
@@ -667,6 +721,11 @@
                 document.getElementById('meal-date').value = getLocalDateString();
                 document.getElementById('meal-title').value = '';
                 document.getElementById('meal-desc').value = '';
+            } else if (id === 'recipe-modal') {
+                document.getElementById('recipe-title').value = '';
+                document.getElementById('recipe-category').value = 'Hauptgericht';
+                document.getElementById('recipe-ingredients').value = '';
+                document.getElementById('recipe-instructions').value = '';
             }
             document.getElementById(id).classList.remove('hidden');
         };
@@ -787,16 +846,6 @@
             document.getElementById('task-due').value = '';
         };
 
-        window.saveInventory = function() {
-            const title = document.getElementById('inv-title').value.trim();
-            const category = document.getElementById('inv-category').value;
-            if (!title) { alert('Bitte einen Artikel eingeben.'); return; }
-            data.inventory.push({ id: Date.now(), title, category });
-            saveData();
-            closeModal('inventory-modal');
-            document.getElementById('inv-title').value = '';
-        };
-
         window.saveShopping = function() {
             const title = document.getElementById('shop-title').value.trim();
             if (!title) { alert('Bitte einen Artikel eingeben.'); return; }
@@ -820,6 +869,39 @@
             closeModal('meal-modal');
         };
 
+        window.saveRecipe = function() {
+            const title = document.getElementById('recipe-title').value.trim();
+            const category = document.getElementById('recipe-category').value.trim() || 'Hauptgericht';
+            const ingredients = document.getElementById('recipe-ingredients').value.trim();
+            const instructions = document.getElementById('recipe-instructions').value.trim();
+
+            if (!title) { alert('Bitte einen Rezept-Titel eingeben.'); return; }
+            if (!data.recipes) data.recipes = [];
+            data.recipes.push({ id: Date.now(), title, category, ingredients, instructions });
+            saveData();
+            closeModal('recipe-modal');
+        };
+
+        window.addRecipeIngredientsToShopping = function(recipeId) {
+            const recipe = (data.recipes || []).find(r => r.id === recipeId);
+            if (!recipe || !recipe.ingredients) {
+                alert('Dieses Rezept hat keine Zutaten.');
+                return;
+            }
+            if (!data.shopping) data.shopping = [];
+            const lines = recipe.ingredients.split('\n');
+            let addedCount = 0;
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (trimmed) {
+                    data.shopping.push({ id: Date.now() + Math.random(), title: trimmed, completed: false });
+                    addedCount++;
+                }
+            });
+            saveData();
+            alert(`${addedCount} Zutaten von "${recipe.title}" wurden zur Einkaufsliste hinzugefügt!`);
+        };
+
         window.addMealToShopping = function(title) {
             if (!data.shopping) data.shopping = [];
             data.shopping.push({ id: Date.now(), title: title, completed: false });
@@ -834,19 +916,13 @@
 
         window.deleteTask = function(id) { data.tasks = data.tasks.filter(t => t.id !== id); saveData(); };
         window.deleteCalendar = function(id) { data.calendar = data.calendar.filter(c => c.id !== id); saveData(); };
-        window.deleteInventory = function(id) { data.inventory = data.inventory.filter(i => i.id !== id); saveData(); };
         window.deleteShopping = function(id) { data.shopping = data.shopping.filter(s => s.id !== id); saveData(); };
         window.deleteMeal = function(id) { data.meals = (data.meals || []).filter(m => m.id !== id); saveData(); };
+        window.deleteRecipe = function(id) { data.recipes = (data.recipes || []).filter(r => r.id !== id); saveData(); };
 
         window.toggleShopping = function(id) {
             const item = data.shopping.find(s => s.id === id);
             if (item) { item.completed = !item.completed; saveData(); }
-        };
-
-        window.addToShoppingFromInventory = function(title) {
-            data.shopping.push({ id: Date.now(), title: title, completed: false });
-            saveData();
-            alert('"' + title + '" wurde zur Einkaufsliste hinzugefügt!');
         };
 
         function hexToRgba(hex, alpha) {
@@ -856,7 +932,6 @@
             return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
         }
 
-        // Erweiterte Event-Generierung mit Berücksichtigung von End-Daten und Wiederholungs-Enden
         function getEventsForMonth(year, month) {
             const events = [];
             const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -955,7 +1030,79 @@
             return events;
         }
 
-        function renderAll() { renderCalendar(); renderTasks(); renderInventory(); renderShopping(); renderMeals(); }
+        function renderAll() {
+            renderDashboard();
+            renderCalendar();
+            renderTasks();
+            renderShopping();
+            renderMeals();
+            renderRecipes();
+        }
+
+        function renderDashboard() {
+            const todayStr = getLocalDateString();
+            const dateObj = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('dashboard-date').textContent = dateObj.toLocaleDateString('de-DE', options);
+
+            // 1. Heutiges Essen
+            const mealsContainer = document.getElementById('dashboard-meals-container');
+            const todayMeals = (data.meals || []).filter(m => m.date === todayStr);
+            if (todayMeals.length === 0) {
+                mealsContainer.innerHTML = `<div class="text-xs text-slate-400 dark:text-slate-500 italic">Heute ist noch kein Gericht geplant.</div>`;
+            } else {
+                mealsContainer.innerHTML = todayMeals.map(m => `
+                    <div class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">${m.type}</span>
+                            <h5 class="font-bold text-sm text-slate-800 dark:text-slate-200">${m.title}</h5>
+                        </div>
+                        <button onclick="addMealToShopping('${m.title.replace(/'/g, "\\'")}')" title="Auf Einkaufsliste" class="text-slate-400 hover:text-emerald-600 p-1.5"><i class="fa-solid fa-cart-plus text-sm"></i></button>
+                    </div>
+                `).join('');
+            }
+
+            // 2. Heutige Termine
+            const calContainer = document.getElementById('dashboard-calendar-container');
+            const currentYear = dateObj.getFullYear();
+            const currentMonth = dateObj.getMonth();
+            const monthEvents = getEventsForMonth(currentYear, currentMonth);
+            const todayEvents = monthEvents.filter(e => e.computedDate === todayStr);
+
+            if (todayEvents.length === 0) {
+                calContainer.innerHTML = `<div class="text-xs text-slate-400 dark:text-slate-500 italic">Keine Termine für heute eingetragen.</div>`;
+            } else {
+                calContainer.innerHTML = todayEvents.map(e => {
+                    const color = e.color || '#e11d48';
+                    return `
+                        <div class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                            <div>
+                                <span style="background-color: ${color};" class="text-[9px] font-bold text-white px-2 py-0.5 rounded-full">${e.category || 'Termin'}</span>
+                                <h5 class="font-bold text-sm text-slate-800 dark:text-slate-200 mt-1">${e.title}</h5>
+                                ${e.time ? `<span class="text-xs text-slate-500"><i class="fa-regular fa-clock mr-1"></i>${e.time} Uhr</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // 3. Offene Aufgaben
+            const tasksContainer = document.getElementById('dashboard-tasks-container');
+            const openTasks = (data.tasks || []).filter(t => !t.completed).slice(0, 3);
+            if (openTasks.length === 0) {
+                tasksContainer.innerHTML = `<div class="text-xs text-slate-400 dark:text-slate-500 italic">Super, keine offenen Aufgaben! 🎉</div>`;
+            } else {
+                tasksContainer.innerHTML = openTasks.map(t => `
+                    <div class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" onclick="toggleTask(${t.id})" class="w-4 h-4 rounded border-slate-300 text-rose-600 cursor-pointer">
+                            <span class="text-xs font-semibold text-slate-800 dark:text-slate-200">${t.title}</span>
+                        </div>
+                        ${t.assignee ? `<span class="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">${t.assignee}</span>` : ''}
+                    </div>
+                `).join('');
+            }
+        }
 
         function renderCalendar() {
             const container = document.getElementById('calendar-content-container');
@@ -971,7 +1118,6 @@
             const monthEvents = getEventsForMonth(year, month);
             const todayStr = getLocalDateString();
 
-            // 1. MONATS-GRID RENDERN
             if (calendarViewMode === 'month') {
                 gridContainer.classList.remove('hidden');
                 const firstDayIndex = (new Date(year, month, 1).getDay() + 6) % 7;
@@ -1009,7 +1155,6 @@
                 gridHtml += `</div>`;
                 gridContainer.innerHTML = gridHtml;
 
-                // 2. ALLE TERMINE DES MONATS ANZEIGEN
                 let listHtml = `
                     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3 shadow-sm">
                         <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
@@ -1065,7 +1210,6 @@
                 container.innerHTML = listHtml;
 
             } else {
-                // AGENDA- / LISTENANSICHT
                 gridContainer.classList.add('hidden');
 
                 if (monthEvents.length === 0) { 
@@ -1126,31 +1270,6 @@
             `).join('');
         }
 
-        function renderInventory() {
-            const container = document.getElementById('inventory-container');
-            if (!container) return;
-            container.innerHTML = categories.map(cat => {
-                const items = (data.inventory || []).filter(i => i.category === cat);
-                return `
-                    <div class="space-y-2">
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 px-1">${cat}</h4>
-                        <div class="space-y-2">
-                            ${items.length === 0 ? `<div class="text-xs text-slate-400 dark:text-slate-500 italic px-1 bg-slate-50 dark:bg-slate-800/40 p-2 rounded-xl">Keine Einträge</div>` : 
-                                items.map(item => `
-                                    <div class="bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 rounded-2xl p-3.5 shadow-sm flex items-center justify-between">
-                                        <span class="font-medium text-sm text-slate-800 dark:text-slate-200">${item.title}</span>
-                                        <div class="flex items-center space-x-1">
-                                            <button onclick="addToShoppingFromInventory('${item.title.replace(/'/g, "\\'")}')" title="Auf Einkaufsliste setzen" class="text-slate-400 hover:text-emerald-600 p-2 cursor-pointer"><i class="fa-solid fa-cart-plus text-sm"></i></button>
-                                            <button onclick="deleteInventory(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer"><i class="fa-solid fa-trash-can text-sm"></i></button>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
         function renderShopping() {
             const container = document.getElementById('shopping-list');
             if (!container) return;
@@ -1190,6 +1309,41 @@
                         <button onclick="addMealToShopping('${item.title.replace(/'/g, "\\'")}')" title="Zutaten auf Einkaufsliste setzen" class="text-slate-400 hover:text-emerald-600 p-2 cursor-pointer"><i class="fa-solid fa-cart-plus text-sm"></i></button>
                         <button onclick="deleteMeal(${item.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer"><i class="fa-solid fa-trash-can text-sm"></i></button>
                     </div>
+                </div>
+            `).join('');
+        }
+
+        function renderRecipes() {
+            const container = document.getElementById('recipe-list');
+            if (!container) return;
+            if (!data.recipes || data.recipes.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 text-slate-400 dark:text-slate-500 text-sm bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">Noch keine Rezepte gespeichert.</div>`;
+                return;
+            }
+            container.innerHTML = data.recipes.map(recipe => `
+                <div class="bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 rounded-2xl p-4 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-0.5 rounded-full">${recipe.category}</span>
+                            <h4 class="font-bold text-sm text-slate-900 dark:text-white">${recipe.title}</h4>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            <button onclick="addRecipeIngredientsToShopping(${recipe.id})" title="Zutaten auf Einkaufsliste" class="text-slate-400 hover:text-emerald-600 p-2 cursor-pointer"><i class="fa-solid fa-cart-plus text-sm"></i></button>
+                            <button onclick="deleteRecipe(${recipe.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                        </div>
+                    </div>
+                    ${recipe.ingredients ? `
+                        <div class="bg-white dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/60 text-xs space-y-1">
+                            <span class="font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[10px]">Zutaten:</span>
+                            <p class="text-slate-700 dark:text-slate-300 whitespace-pre-line">${recipe.ingredients}</p>
+                        </div>
+                    ` : ''}
+                    ${recipe.instructions ? `
+                        <div class="text-xs space-y-0.5 text-slate-600 dark:text-slate-300">
+                            <span class="font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[10px]">Zubereitung:</span>
+                            <p class="whitespace-pre-line">${recipe.instructions}</p>
+                        </div>
+                    ` : ''}
                 </div>
             `).join('');
         }
