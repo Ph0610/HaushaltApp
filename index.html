@@ -190,7 +190,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-lg font-bold text-slate-900 dark:text-white">Digitales Rezeptbuch</h3>
-                        <p class="text-xs text-slate-400 dark:text-slate-400">Eure Lieblingsgerichte & Zutaten</p>
+                        <p class="text-xs text-slate-400 dark:text-slate-400">Eure Lieblingsgerichte & Fotos</p>
                     </div>
                     <button onclick="openModal('recipe-modal')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
                         <i class="fa-solid fa-plus mr-1"></i> Rezept
@@ -340,12 +340,22 @@
 
     <!-- MEAL MODAL -->
     <div id="meal-modal" class="modal hidden fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-slate-900 dark:text-slate-100">
+        <div class="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-slate-900 dark:text-slate-100 max-h-[90vh] overflow-y-auto">
             <h3 class="text-base font-bold text-slate-900 dark:text-white">Gericht zum Menüplan hinzufügen</h3>
             <div class="space-y-3">
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Gericht / Rezept</label>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Aus Rezepten wählen (opt.)</label>
+                    <select id="meal-recipe-select" onchange="onMealRecipeSelect(this)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                        <option value="">-- Eigenes Gericht eingeben --</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Gericht / Hauptspeise</label>
                     <input type="text" id="meal-title" placeholder="z.B. Spaghetti Bolognese" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Nachtisch (opt.)</label>
+                    <input type="text" id="meal-dessert" placeholder="z.B. Tiramisu / Vanillepudding" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
@@ -376,7 +386,7 @@
     <!-- RECIPE MODAL -->
     <div id="recipe-modal" class="modal hidden fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
         <div class="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-slate-900 dark:text-slate-100 max-h-[90vh] overflow-y-auto">
-            Neues Rezept hinzufügen
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Neues Rezept hinzufügen</h3>
             <div class="space-y-3">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Rezept-Titel</label>
@@ -385,6 +395,10 @@
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Kategorie</label>
                     <input type="text" id="recipe-category" placeholder="z.B. Hauptgericht" value="Hauptgericht" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Foto (opt.)</label>
+                    <input type="file" id="recipe-image-input" accept="image/*" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 cursor-pointer">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">Zutaten (jede Zeile eine Zutat)</label>
@@ -720,16 +734,39 @@
             if (id === 'meal-modal') {
                 document.getElementById('meal-date').value = getLocalDateString();
                 document.getElementById('meal-title').value = '';
+                document.getElementById('meal-dessert').value = '';
                 document.getElementById('meal-desc').value = '';
+                
+                // Rezept-Auswahl befüllen
+                const selectEl = document.getElementById('meal-recipe-select');
+                if (selectEl) {
+                    let html = '<option value="">-- Eigenes Gericht eingeben --</option>';
+                    (data.recipes || []).forEach(r => {
+                        html += `<option value="${r.id}">${r.title}</option>`;
+                    });
+                    selectEl.innerHTML = html;
+                }
             } else if (id === 'recipe-modal') {
                 document.getElementById('recipe-title').value = '';
                 document.getElementById('recipe-category').value = 'Hauptgericht';
+                document.getElementById('recipe-image-input').value = '';
                 document.getElementById('recipe-ingredients').value = '';
                 document.getElementById('recipe-instructions').value = '';
             }
             document.getElementById(id).classList.remove('hidden');
         };
+
         window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); };
+
+        window.onMealRecipeSelect = function(selectEl) {
+            const recipeId = selectEl.value;
+            if (!recipeId) return;
+            const recipe = (data.recipes || []).find(r => r.id == recipeId);
+            if (recipe) {
+                document.getElementById('meal-title').value = recipe.title || '';
+                document.getElementById('meal-desc').value = recipe.ingredients || '';
+            }
+        };
 
         window.setCalendarView = function(view) {
             calendarViewMode = view;
@@ -857,13 +894,14 @@
 
         window.saveMeal = function() {
             const title = document.getElementById('meal-title').value.trim();
+            const dessert = document.getElementById('meal-dessert').value.trim();
             const date = document.getElementById('meal-date').value;
             const type = document.getElementById('meal-type').value;
             const desc = document.getElementById('meal-desc').value.trim();
             if (!title) { alert('Bitte ein Gericht eingeben.'); return; }
             if (!date) { alert('Bitte ein Datum wählen.'); return; }
             if (!data.meals) data.meals = [];
-            data.meals.push({ id: Date.now(), title, date, type, desc });
+            data.meals.push({ id: Date.now(), title, dessert, date, type, desc });
             data.meals.sort((a, b) => a.date > b.date ? 1 : -1);
             saveData();
             closeModal('meal-modal');
@@ -874,13 +912,28 @@
             const category = document.getElementById('recipe-category').value.trim() || 'Hauptgericht';
             const ingredients = document.getElementById('recipe-ingredients').value.trim();
             const instructions = document.getElementById('recipe-instructions').value.trim();
+            const imageInput = document.getElementById('recipe-image-input');
 
             if (!title) { alert('Bitte einen Rezept-Titel eingeben.'); return; }
+
+            if (imageInput && imageInput.files && imageInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageData = e.target.result;
+                    pushRecipeData(title, category, ingredients, instructions, imageData);
+                };
+                reader.readAsDataURL(imageInput.files[0]);
+            } else {
+                pushRecipeData(title, category, ingredients, instructions, null);
+            }
+        };
+
+        function pushRecipeData(title, category, ingredients, instructions, image) {
             if (!data.recipes) data.recipes = [];
-            data.recipes.push({ id: Date.now(), title, category, ingredients, instructions });
+            data.recipes.push({ id: Date.now(), title, category, ingredients, instructions, image });
             saveData();
             closeModal('recipe-modal');
-        };
+        }
 
         window.addRecipeIngredientsToShopping = function(recipeId) {
             const recipe = (data.recipes || []).find(r => r.id === recipeId);
@@ -1056,6 +1109,7 @@
                         <div>
                             <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">${m.type}</span>
                             <h5 class="font-bold text-sm text-slate-800 dark:text-slate-200">${m.title}</h5>
+                            ${m.dessert ? `<p class="text-xs text-slate-500 dark:text-slate-400 italic">🍰 Nachtisch: ${m.dessert}</p>` : ''}
                         </div>
                         <button onclick="addMealToShopping('${m.title.replace(/'/g, "\\'")}')" title="Auf Einkaufsliste" class="text-slate-400 hover:text-emerald-600 p-1.5"><i class="fa-solid fa-cart-plus text-sm"></i></button>
                     </div>
@@ -1302,7 +1356,8 @@
                             <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-0.5 rounded-full">${item.type}</span>
                             <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400"><i class="fa-regular fa-calendar mr-1"></i>${item.date}</span>
                         </div>
-                        <h4 class="font-bold text-sm text-slate-800 dark:text-slate-200">${item.title}</h4>
+                        <h4 class="font-bold text-sm text-slate-800 dark:text-slate-200">🍽️ ${item.title}</h4>
+                        ${item.dessert ? `<p class="text-xs text-slate-600 dark:text-slate-300">🍰 Nachtisch: <span class="font-semibold">${item.dessert}</span></p>` : ''}
                         ${item.desc ? `<p class="text-xs text-slate-500 dark:text-slate-400 italic">${item.desc}</p>` : ''}
                     </div>
                     <div class="flex items-center space-x-1">
@@ -1332,6 +1387,11 @@
                             <button onclick="deleteRecipe(${recipe.id})" class="text-slate-400 hover:text-rose-600 p-2 cursor-pointer"><i class="fa-solid fa-trash-can text-sm"></i></button>
                         </div>
                     </div>
+                    ${recipe.image ? `
+                        <div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+                            <img src="${recipe.image}" alt="${recipe.title}" class="w-full h-40 object-cover">
+                        </div>
+                    ` : ''}
                     ${recipe.ingredients ? `
                         <div class="bg-white dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/60 text-xs space-y-1">
                             <span class="font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[10px]">Zutaten:</span>
