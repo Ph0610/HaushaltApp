@@ -78,9 +78,14 @@
                         <h3 class="text-lg font-bold text-slate-900 dark:text-white">Gemeinsamer Kalender</h3>
                         <p class="text-xs text-slate-400 dark:text-slate-400">Monats- und Listenansicht</p>
                     </div>
-                    <button onclick="openModalForDate('')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
-                        <i class="fa-solid fa-plus mr-1"></i> Termin
-                    </button>
+                    <div class="flex items-center space-x-1.5">
+                        <button onclick="exportToICS()" class="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-300 dark:hover:bg-slate-700 transition cursor-pointer" title="In Handy-Kalender exportieren (.ics)">
+                            <i class="fa-solid fa-file-arrow-down mr-1"></i> ICS
+                        </button>
+                        <button onclick="openModalForDate('')" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-rose-600/20 hover:bg-rose-700 transition cursor-pointer">
+                            <i class="fa-solid fa-plus mr-1"></i> Termin
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Kalender Steuerung & Ansicht-Umschalter -->
@@ -344,7 +349,7 @@
         let currentCalendarDate = new Date();
         let calendarViewMode = 'month';
         let selectedDayStr = getLocalDateString();
-        let editingCalendarId = null; // Speichert ID, falls ein Termin bearbeitet wird
+        let editingCalendarId = null;
 
         function getStorageKey() {
             return 'household_data_' + (currentHousehold ? currentHousehold.trim().toLowerCase() : 'default');
@@ -399,6 +404,42 @@
             } else {
                 alert('Keine aktive Verbindung zum Server.');
             }
+        };
+
+        // ICS Export Funktion für den Handy-Kalender
+        window.exportToICS = function() {
+            if (!data.calendar || data.calendar.length === 0) {
+                alert('Keine Termine zum Exportieren vorhanden.');
+                return;
+            }
+            
+            let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Haushalts-Manager//DE\nMETHOD:PUBLISH\n";
+            
+            data.calendar.forEach(item => {
+                if (!item.date) return;
+                const dStr = item.date.replace(/-/g, '');
+                const timeStr = item.time ? item.time.replace(':', '') + '00' : '000000';
+                
+                icsContent += "BEGIN:VEVENT\n";
+                icsContent += `UID:event_${item.id}@haushaltsmanager\n`;
+                icsContent += `DTSTAMP:${dStr}T${timeStr}\n`;
+                icsContent += `DTSTART:${dStr}T${timeStr}\n`;
+                icsContent += `SUMMARY:${item.title.replace(/[\\;,]/g, '\\$&')}\n`;
+                if (item.desc) icsContent += `DESCRIPTION:${item.desc.replace(/[\\;,]/g, '\\$&')}\n`;
+                icsContent += "END:VEVENT\n";
+            });
+            
+            icsContent += "END:VCALENDAR";
+            
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'haushalt-kalender.ics';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         };
 
         function initMQTT() {
@@ -607,7 +648,6 @@
             if (!date) { alert('Bitte ein Datum wählen.'); return; }
 
             if (editingCalendarId) {
-                // Bestehenden Termin aktualisieren
                 const item = data.calendar.find(c => c.id === editingCalendarId);
                 if (item) {
                     item.title = title;
@@ -620,7 +660,6 @@
                 }
                 editingCalendarId = null;
             } else  {
-                // Neuen Termin hinzufügen
                 data.calendar.push({ id: Date.now(), title, date, time, category, color, recurrence, desc });
             }
             
